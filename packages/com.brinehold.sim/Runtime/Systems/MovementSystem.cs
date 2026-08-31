@@ -61,7 +61,7 @@ namespace Brinehold.Sim.Systems
                     // A plain move order is finished the moment the path runs out. Task jobs
                     // (harvest, build, attack) are resolved by their own systems on arrival.
                     if (store.Job[i] == JobType.MoveTo)
-                        store.Job[i] = JobType.Idle;
+                        world.SetJobIfChanged(i, JobType.Idle, store.Position[i], Brinehold.Core.Collections.EntityId.None);
                 }
             }
         }

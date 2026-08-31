@@ -10,6 +10,83 @@ versioning will follow [Semantic Versioning](https://semver.org/) once there is 
 
 ## [Unreleased]
 
+### Added — M1 foundations and the M3 prototype simulation and network spine
+
+**Status: 137 tests passing** via `dotnet test` — no Unity editor required, because the simulation
+has no engine dependency.
+
+#### `Brinehold.Core` — deterministic primitives (pure C#, no `UnityEngine`)
+- `Fix64`, Q31.32 fixed point: 64×64→128 multiply decomposed into 32-bit halves, restoring long
+  division with saturation, digit-by-digit `Sqrt`, ninth-order Taylor `Sin`/`Cos`, minimax `Atan2`.
+  All integer arithmetic, so results are bit-identical on every platform.
+- `Fix2` with an exact `MoveTowards` that lands on the destination instead of oscillating past it.
+- `DeterministicRandom` (xorshift128+, SplitMix64 seeding) with capturable state.
+- `EntityId` (24-bit index + 8-bit generation), `StateHash` (FNV-1a 64), `BitWriter`/`BitReader`
+  with bounds-checked reads, and position/angle/ratio quantisers.
+
+#### `Brinehold.Sim` — the authoritative game rules (pure C#, no `UnityEngine`)
+- Structure-of-arrays `EntityStore` with generation-checked slot recycling.
+- `NavGrid` and a deterministic A* `PathFinder`: integer costs, index tie-breaking, no corner
+  cutting, and a node budget so one bad order cannot stall a tick.
+- Nine systems in a fixed declared order: command ingest, movement, harvest, construction,
+  production, combat, death, vision, victory.
+- Physical goods — workers carry loads and a player's resource count rises only on deposit, so haul
+  distance is a real cost and a destroyed warehouse strands the load rather than voiding it.
+- Per-player fog of war computed inside the simulation, consulted at the replication boundary.
+- Complete server-side command validation: ownership, liveness, affordability at the execution
+  tick, population room, placement legality, target validity, selection size. Invalid commands are
+  dropped and reported, never clamped.
+- "Twin Coves" prototype map: mirrored bases, a southern sea, a central ridge with one gap.
+
+#### `Brinehold.Protocol` and `Brinehold.Net` — the network spine
+- Bit-packed wire format with defensive decoders; version and content hash checked at handshake.
+- `ReplicationServer`: fog-filtered, five-tier replication. A player is never sent a byte about an
+  entity they cannot see, so a modified client has nothing to reveal.
+- `IntentExtrapolator`: the same movement reproduction code runs on the client and as a server-side
+  shadow, so movement replicates as one intent message rather than a stream of transforms.
+- `ReplicaWorld`: the client's presentation replica, including its own navigation grid updated with
+  the footprints of buildings it can see.
+- `LoopbackNetwork` with deterministic latency, jitter and loss for testing.
+
+#### `Brinehold.Server` — headless authoritative host
+- `MatchHost`: 20 Hz tick loop, session management, token-bucket rate limiting (40 commands/second),
+  sequence-based replay protection. The player id on an incoming command is ignored entirely and
+  filled in from the authenticated session.
+- Console entry point with real-time and benchmark modes.
+
+#### Measured (2 players, 10 workers each, 10 minutes of match time, Release build)
+- **0.071 ms per tick** — 705× real time on one core.
+- **34.6 B/s per client**, against the 8 KB/s prototype budget.
+- **0 corrections** across the whole match: the client's extrapolation matches the server exactly.
+- Idle match: ~25 B/s, which is only the keepalive and the economy refresh.
+
+#### Bugs found and fixed by these tests
+- The position quantiser truncated instead of rounding, doubling worst-case error and biasing every
+  quantised position toward the map origin.
+- `NearestPassable` returned the first cell in a search ring rather than the nearest, leaving
+  workers standing outside their own warehouse's delivery reach.
+- Eighteen job transitions changed an entity's job without emitting an intent, so clients kept
+  walking workers the server had already stopped. This cost **13,271 corrections and 330 B/s** in a
+  ten-minute match; routing every transition through `SetJobIfChanged` took it to **0 corrections
+  and 34.6 B/s**. A regression test now guards the ratio.
+- The private-economy stream was delta-only, so a client whose HUD was wrong stayed wrong forever.
+  It now refreshes once a second and is self-healing.
+
+#### Testing and tooling
+- 50 core tests, 62 simulation tests, 25 networked integration tests.
+- Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
+  client that forges player ids, orders enemy units, tampers with local state, floods commands,
+  replays sequence numbers and sends malformed packets — all with no effect on the world.
+- `.github/workflows/ci.yml`: build, test and a server smoke run, plus a three-platform determinism
+  matrix.
+- `tools/dev/run-local-match.sh`, `tools/dev/benchmark.sh`, `tools/ci/run-tests.sh`.
+
+#### Not yet built
+- The Unity client (view layer) — no rendering, input or UI exists yet.
+- Socket transport: the loopback transport is real and tested, but nothing has crossed a network
+  interface yet.
+- Reconnection, replays and spectating (M4/M6).
+
 ### Added — M0 architecture and design phase
 
 - **`GAME_DESIGN.md`** — the design contract: concept, six design pillars, original setting (the Free

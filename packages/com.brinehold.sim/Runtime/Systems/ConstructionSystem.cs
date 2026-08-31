@@ -32,8 +32,8 @@ namespace Brinehold.Sim.Systems
                 EntityId site = store.JobTarget[i];
                 if (!store.IsAlive(site) || !store.UnderConstruction[site.Index])
                 {
-                    store.Job[i] = JobType.Idle;
                     store.ClearPath(i);
+                    world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                     continue;
                 }
 
@@ -42,12 +42,12 @@ namespace Brinehold.Sim.Systems
                     if (job == JobType.Building)
                     {
                         // Pushed out of reach somehow: walk back.
-                        store.Job[i] = JobType.MoveToBuild;
+                        world.SetJobIfChanged(i, JobType.MoveToBuild, store.Position[site.Index], site);
                         world.RequestPath(i, store.Position[site.Index]);
                     }
                     else if (!store.HasPath(i))
                     {
-                        store.Job[i] = JobType.Idle;
+                        world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                     }
                     continue;
                 }
@@ -55,7 +55,7 @@ namespace Brinehold.Sim.Systems
                 if (job == JobType.MoveToBuild)
                 {
                     store.ClearPath(i);
-                    store.Job[i] = JobType.Building;
+                    world.SetJobIfChanged(i, JobType.Building, store.Position[i], site);
                 }
 
                 store.BuildProgress[site.Index] += PrototypeContent.BuildProgressPerWorkerTick;
@@ -100,8 +100,8 @@ namespace Brinehold.Sim.Systems
                     if (store.Kind[i] != EntityKind.Worker) continue;
                     if (store.JobTarget[i] != siteId) continue;
                     if (store.Job[i] != JobType.Building && store.Job[i] != JobType.MoveToBuild) continue;
-                    store.Job[i] = JobType.Idle;
                     store.ClearPath(i);
+                    world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                 }
             }
         }

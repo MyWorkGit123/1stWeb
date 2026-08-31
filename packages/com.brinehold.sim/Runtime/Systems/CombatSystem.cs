@@ -52,8 +52,8 @@ namespace Brinehold.Sim.Systems
                 EntityId target = store.JobTarget[i];
                 if (!store.IsAlive(target))
                 {
-                    store.Job[i] = JobType.Idle;
                     store.ClearPath(i);
+                    world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                     continue;
                 }
 
@@ -65,8 +65,8 @@ namespace Brinehold.Sim.Systems
                 {
                     if (store.Job[i] != JobType.Attacking)
                     {
-                        store.Job[i] = JobType.Attacking;
                         store.ClearPath(i);
+                        world.SetJobIfChanged(i, JobType.Attacking, store.Position[i], target);
                     }
 
                     if (store.AttackTimer[i] <= 0)
@@ -81,13 +81,13 @@ namespace Brinehold.Sim.Systems
                     // Chase. Ships cannot chase onto land and vice versa; the path simply fails.
                     if (store.Job[i] == JobType.Attacking)
                     {
-                        store.Job[i] = JobType.MoveToAttack;
+                        world.SetJobIfChanged(i, JobType.MoveToAttack, store.Position[t], target);
                         world.RequestPath(i, store.Position[t]);
                     }
                     else if (!store.HasPath(i) || (world.Tick % RepathIntervalTicks) == (uint)(i % RepathIntervalTicks))
                     {
                         if (!world.RequestPath(i, store.Position[t]) && !store.HasPath(i))
-                            store.Job[i] = JobType.Idle;
+                            world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                     }
                 }
             }

@@ -212,6 +212,20 @@ namespace Brinehold.Sim.World
             Events.Add(SimEvent.Intent(Entities.IdOf(index), Entities.Owner[index], job, destination, target));
         }
 
+        /// <summary>
+        /// Sets a job only if it actually differs, emitting the intent that replication carries.
+        ///
+        /// Every job transition must go through here or through <see cref="SetJob"/>. A transition
+        /// that changes the job silently leaves every client extrapolating the old behaviour — a
+        /// worker that has stopped at a tree on the server keeps walking on the client until a
+        /// correction drags it back, which is both wrong on screen and expensive on the wire.
+        /// </summary>
+        public void SetJobIfChanged(int index, JobType job, Fix2 destination, EntityId target)
+        {
+            if (Entities.Job[index] == job && Entities.JobTarget[index] == target) return;
+            SetJob(index, job, destination, target);
+        }
+
         /// <summary>Requests a path and returns whether one was found.</summary>
         public bool RequestPath(int index, Fix2 destination)
         {

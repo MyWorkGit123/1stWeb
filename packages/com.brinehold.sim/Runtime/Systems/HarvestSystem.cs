@@ -48,7 +48,7 @@ namespace Brinehold.Sim.Systems
             if (SimRange.InReach(store, i, node.Index, SimRange.InteractionReach))
             {
                 store.ClearPath(i);
-                store.Job[i] = JobType.Harvesting;
+                world.SetJobIfChanged(i, JobType.Harvesting, store.Position[i], node);
                 store.JobTimer[i] = PrototypeContent.HarvestTicksPerUnit;
                 return;
             }
@@ -111,7 +111,12 @@ namespace Brinehold.Sim.Systems
                 // worker is stranded holding its load, which is the intended consequence of losing
                 // your warehouse.
                 EntityId replacement = FindDropOff(world, store, i);
-                if (replacement.IsNone) { store.Job[i] = JobType.Idle; store.ClearPath(i); return; }
+                if (replacement.IsNone)
+                {
+                    store.ClearPath(i);
+                    world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
+                    return;
+                }
                 world.SetJob(i, JobType.Delivering, store.Position[replacement.Index], replacement);
                 world.RequestPath(i, store.Position[replacement.Index]);
                 return;
@@ -123,7 +128,7 @@ namespace Brinehold.Sim.Systems
                 {
                     // Out of reach with no path left: try once more, then give up this tick.
                     if (!world.RequestPath(i, store.Position[dropOff.Index]))
-                        store.Job[i] = JobType.Idle;
+                        world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                 }
                 return;
             }
@@ -144,11 +149,11 @@ namespace Brinehold.Sim.Systems
             {
                 world.SetJob(i, JobType.MoveToHarvest, store.Position[node.Index], node);
                 if (!world.RequestPath(i, store.Position[node.Index]))
-                    store.Job[i] = JobType.Idle;
+                    world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
             }
             else
             {
-                store.Job[i] = JobType.Idle;
+                world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
             }
         }
 
@@ -157,14 +162,14 @@ namespace Brinehold.Sim.Systems
             EntityId dropOff = FindDropOff(world, store, i);
             if (dropOff.IsNone)
             {
-                store.Job[i] = JobType.Idle;
                 store.ClearPath(i);
+                world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
                 return;
             }
 
             world.SetJob(i, JobType.Delivering, store.Position[dropOff.Index], dropOff);
             if (!world.RequestPath(i, store.Position[dropOff.Index]))
-                store.Job[i] = JobType.Idle;
+                world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
         }
 
         /// <summary>
@@ -201,7 +206,7 @@ namespace Brinehold.Sim.Systems
         {
             store.ClearPath(i);
             if (store.CarriedAmount[i] > 0) BeginDelivery(world, store, i);
-            else store.Job[i] = JobType.Idle;
+            else world.SetJobIfChanged(i, JobType.Idle, store.Position[i], EntityId.None);
         }
     }
 }

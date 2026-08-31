@@ -1,0 +1,7 @@
+{
+  "name": "Brinehold.Net",
+  "rootNamespace": "Brinehold.Net",
+  "references": ["Brinehold.Core", "Brinehold.Sim", "Brinehold.Protocol"],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}
