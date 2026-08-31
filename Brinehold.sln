@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "packages", "packages", "{21564EE5-997D-42F5-AF64-6BB1910824DD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinehold.Core", "packages\com.brinehold.core\Brinehold.Core.csproj", "{2219DD43-D335-40E7-B00F-A73DAB3A37E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinehold.Sim", "packages\com.brinehold.sim\Brinehold.Sim.csproj", "{2BFAA361-783D-48EF-9A8E-FDE6DC3313A4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1DED3D95-7779-4BCB-B213-D507064F2A0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinehold.Core.Tests", "src\Brinehold.Core.Tests\Brinehold.Core.Tests.csproj", "{A32BD9F6-0C16-4991-8145-E0C59E8CC7DD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinehold.Sim.Tests", "src\Brinehold.Sim.Tests\Brinehold.Sim.Tests.csproj", "{9AE65C7E-0337-4075-A725-824BDF9EA850}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2219DD43-D335-40E7-B00F-A73DAB3A37E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2219DD43-D335-40E7-B00F-A73DAB3A37E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2219DD43-D335-40E7-B00F-A73DAB3A37E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2219DD43-D335-40E7-B00F-A73DAB3A37E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BFAA361-783D-48EF-9A8E-FDE6DC3313A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BFAA361-783D-48EF-9A8E-FDE6DC3313A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BFAA361-783D-48EF-9A8E-FDE6DC3313A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BFAA361-783D-48EF-9A8E-FDE6DC3313A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A32BD9F6-0C16-4991-8145-E0C59E8CC7DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A32BD9F6-0C16-4991-8145-E0C59E8CC7DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A32BD9F6-0C16-4991-8145-E0C59E8CC7DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A32BD9F6-0C16-4991-8145-E0C59E8CC7DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9AE65C7E-0337-4075-A725-824BDF9EA850}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AE65C7E-0337-4075-A725-824BDF9EA850}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AE65C7E-0337-4075-A725-824BDF9EA850}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AE65C7E-0337-4075-A725-824BDF9EA850}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2219DD43-D335-40E7-B00F-A73DAB3A37E6} = {21564EE5-997D-42F5-AF64-6BB1910824DD}
+		{2BFAA361-783D-48EF-9A8E-FDE6DC3313A4} = {21564EE5-997D-42F5-AF64-6BB1910824DD}
+		{A32BD9F6-0C16-4991-8145-E0C59E8CC7DD} = {1DED3D95-7779-4BCB-B213-D507064F2A0E}
+		{9AE65C7E-0337-4075-A725-824BDF9EA850} = {1DED3D95-7779-4BCB-B213-D507064F2A0E}
+	EndGlobalSection
+EndGlobal

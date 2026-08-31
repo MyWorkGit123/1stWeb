@@ -1,0 +1,7 @@
+{
+  "name": "Brinehold.Core",
+  "rootNamespace": "Brinehold.Core",
+  "references": [],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

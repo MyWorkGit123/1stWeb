@@ -1,0 +1,7 @@
+{
+  "name": "Brinehold.Sim",
+  "rootNamespace": "Brinehold.Sim",
+  "references": ["Brinehold.Core"],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}
