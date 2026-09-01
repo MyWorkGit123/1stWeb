@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Brinehold.Tools.TestClient</RootNamespace>
+    <AssemblyName>Brinehold.Tools.TestClient</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../packages/com.brinehold.core/Brinehold.Core.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.sim/Brinehold.Sim.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.protocol/Brinehold.Protocol.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.net/Brinehold.Net.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.client/Brinehold.Client.csproj" />
+  </ItemGroup>
+</Project>

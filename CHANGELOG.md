@@ -4,9 +4,9 @@ All notable changes to this project are recorded here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning will follow [Semantic Versioning](https://semver.org/) once there is a build to version.
 
-**Project status: the prototype's simulation and networking are built, tested and measured.**
-175 tests pass headlessly. The Unity client exists as source but has never been compiled — see
-`unity/README.md`. Two-machine play is blocked on the socket transport (M4).
+**Project status: the prototype plays a real match across separate processes over UDP.**
+185 tests pass headlessly. The Unity client exists as source but has never been compiled — see
+`unity/README.md`.
 
 ---
 
@@ -14,7 +14,7 @@ versioning will follow [Semantic Versioning](https://semver.org/) once there is 
 
 ### Added — M1 foundations and the M3 prototype simulation and network spine
 
-**Status: 175 tests passing** via `dotnet test` — no Unity editor required, because the simulation
+**Status: 185 tests passing** via `dotnet test` — no Unity editor required, because the simulation
 has no engine dependency.
 
 #### `Brinehold.Core` — deterministic primitives (pure C#, no `UnityEngine`)
@@ -86,8 +86,34 @@ has no engine dependency.
   builds the entire scene from primitives at runtime, so there are no binary assets and the client
   runs from a single component on an empty scene.
 
+#### UDP transport (brought forward from M4, because without it nothing crosses a network)
+- `ReliableChannel`: 16-bit sequence numbers with wrap-safe comparison, a 32-bit rolling
+  acknowledgement field, retransmission on timeout, an in-order delivery buffer, and duplicate
+  rejection.
+- `UdpServerTransport` / `UdpClientTransport`: one socket serves every client, non-blocking and
+  drained once per tick; connect handshake retried until acknowledged; fragmentation and reassembly
+  for messages above the MTU; connection timeouts; malformed datagrams dropped without allocation.
+- `MatchHost` and `ClientConnection` now speak to `IServerTransport` / `IClientTransport`, so the
+  same host binary runs over the loopback in tests and over UDP in production with no second path.
+- The handshake now happens over the wire: a client introduces itself with a Hello, and the server
+  assigns a player slot only if the protocol version and content hash match.
+- `Brinehold.Tools.TestClient`: a headless client that connects over the network and plays a
+  scripted opening. Two of these against a server is the two-machine test.
+
+**Verified by running three separate operating-system processes:** a server and two clients
+connected over UDP, were given distinct player slots, issued orders, and gathered resources, with a
+matching state hash progression on the server and correct fog isolation between the two clients.
+
+#### Bugs found by the networked tests
+- Handshake refusals were computed but never transmitted, so a client with the wrong build version
+  saw a silent hang instead of a reason. Refusals are now sent.
+- Clients acknowledged received data only every 500 ms, so the server retransmitted a large share of
+  a stream that had arrived perfectly well: **227 needless retransmissions in a 40-second match**.
+  Clients now acknowledge within 25 ms, taking that to **0**.
+
 #### Testing and tooling
-- 50 core tests, 62 simulation tests, 38 client tests, 25 networked integration tests.
+- 50 core tests, 62 simulation tests, 38 client tests, 35 networked integration tests (10 of them
+  over real UDP sockets, including one at 20% packet loss and one played through to victory).
 - Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
   client that forges player ids, orders enemy units, tampers with local state, floods commands,
   replays sequence numbers and sends malformed packets — all with no effect on the world.

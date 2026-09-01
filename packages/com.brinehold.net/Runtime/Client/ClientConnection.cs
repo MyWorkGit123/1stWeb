@@ -16,8 +16,7 @@ namespace Brinehold.Net.Client
     /// </summary>
     public sealed class ClientConnection
     {
-        private readonly LoopbackNetwork _network;
-        private readonly int _connectionId;
+        private readonly IClientTransport _transport;
         private readonly BitWriter _writer = new BitWriter(1024);
         private uint _sequence;
 
@@ -26,14 +25,35 @@ namespace Brinehold.Net.Client
         /// <summary>Commands sent that the server has not answered. Used by the UI to show pending orders.</summary>
         public int PendingCommands { get; private set; }
 
-        public ClientConnection(LoopbackNetwork network, int connectionId, ReplicaWorld replica)
+        public ClientConnection(IClientTransport transport, ReplicaWorld replica)
         {
-            _network = network;
-            _connectionId = connectionId;
+            _transport = transport;
             Replica = replica;
         }
 
+        /// <summary>Convenience for the loopback path used by tests and listen mode.</summary>
+        public ClientConnection(LoopbackNetwork network, int connectionId, ReplicaWorld replica)
+            : this(new LoopbackClientTransport(network, connectionId), replica) { }
+
+        public bool IsConnected => _transport.IsConnected;
+
         public uint NextSequence() => ++_sequence;
+
+        /// <summary>
+        /// Introduces this client to the server. The reply is a Welcome carrying either an accepted
+        /// player slot or the reason the build was refused; the replica applies it when it arrives.
+        /// </summary>
+        public void SendHello(ulong contentHash, string playerName)
+        {
+            _writer.Reset();
+            MessageCodec.Write(_writer, new Brinehold.Protocol.HelloMessage
+            {
+                ProtocolVersion = Brinehold.Protocol.ProtocolVersion.Current,
+                ContentHash = contentHash,
+                PlayerName = playerName ?? string.Empty
+            });
+            _transport.Send(_writer.AsSegment(), Channel.ReliableOrdered);
+        }
 
         /// <summary>Sends an order. The player id on the command is ignored by the server.</summary>
         public void Send(Command command)
@@ -41,7 +61,7 @@ namespace Brinehold.Net.Client
             command.Sequence = NextSequence();
             _writer.Reset();
             MessageCodec.Write(_writer, command);
-            _network.SendToServer(_connectionId, _writer.AsSegment(), Channel.ReliableOrdered);
+            _transport.Send(_writer.AsSegment(), Channel.ReliableOrdered);
             PendingCommands++;
         }
 
@@ -53,13 +73,14 @@ namespace Brinehold.Net.Client
         {
             _writer.Reset();
             MessageCodec.Write(_writer, command);
-            _network.SendToServer(_connectionId, _writer.AsSegment(), Channel.ReliableOrdered);
+            _transport.Send(_writer.AsSegment(), Channel.ReliableOrdered);
         }
 
         /// <summary>Pulls everything the server has sent and applies it, then extrapolates one tick.</summary>
         public void Pump()
         {
-            while (_network.TryReceiveClient(_connectionId, out ArraySegment<byte> payload))
+            _transport.Poll();
+            while (_transport.TryReceive(out ArraySegment<byte> payload))
             {
                 Replica.Receive(payload);
                 PendingCommands = Math.Max(0, PendingCommands - Replica.Rejections.Count);

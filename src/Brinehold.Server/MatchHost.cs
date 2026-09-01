@@ -40,9 +40,13 @@ namespace Brinehold.Server
             public int DroppedForReplay;
         }
 
-        private readonly LoopbackNetwork _network;
+        private readonly IServerTransport _transport;
         private readonly List<Session> _sessions = new List<Session>();
         private readonly BitWriter _scratch = new BitWriter(2048);
+        private readonly List<int> _awaitingHello = new List<int>();
+
+        /// <summary>Players whose connection has dropped. The disconnect grace flow lands in M6.</summary>
+        public readonly List<byte> Disconnected = new List<byte>();
 
         public readonly SimWorld World;
         public readonly ReplicationServer Replication;
@@ -51,14 +55,18 @@ namespace Brinehold.Server
         /// <summary>Commands refused before they ever reached the simulation.</summary>
         public int RejectedBeforeSimulation { get; private set; }
 
-        public MatchHost(MatchConfig config, LoopbackNetwork network)
+        public MatchHost(MatchConfig config, IServerTransport transport)
         {
             Config = config;
             World = new SimWorld(config);
             PrototypeMap.Build(World);
             Replication = new ReplicationServer(World);
-            _network = network;
+            _transport = transport;
         }
+
+        /// <summary>Convenience for the loopback path used by tests and listen mode.</summary>
+        public MatchHost(MatchConfig config, LoopbackNetwork network)
+            : this(config, new LoopbackServerTransport(network)) { }
 
         /// <summary>Registers a connection and assigns it a player slot.</summary>
         public bool TryConnect(int connectionId, string name, ushort protocolVersion, ulong contentHash, out WelcomeMessage welcome)
@@ -72,21 +80,27 @@ namespace Brinehold.Server
                 ContentHash = Config.ContentHash()
             };
 
+            // A refusal is transmitted, not merely returned. A client that is told nothing cannot
+            // tell its player whether the build is out of date, the content has been edited, or the
+            // match is simply full — it just appears to hang.
             if (protocolVersion != ProtocolVersion.Current)
             {
                 welcome.Result = HandshakeResult.ProtocolMismatch;
+                SendWelcome(connectionId, welcome);
                 return false;
             }
 
             if (contentHash != Config.ContentHash())
             {
                 welcome.Result = HandshakeResult.ContentMismatch;
+                SendWelcome(connectionId, welcome);
                 return false;
             }
 
             if (_sessions.Count >= Config.PlayerCount)
             {
                 welcome.Result = HandshakeResult.MatchFull;
+                SendWelcome(connectionId, welcome);
                 return false;
             }
 
@@ -101,11 +115,15 @@ namespace Brinehold.Server
 
             welcome.Result = HandshakeResult.Accepted;
             welcome.PlayerId = session.PlayerId;
+            SendWelcome(connectionId, welcome);
+            return true;
+        }
 
+        private void SendWelcome(int connectionId, WelcomeMessage welcome)
+        {
             _scratch.Reset();
             MessageCodec.Write(_scratch, welcome);
-            _network.SendToClient(connectionId, _scratch.AsSegment(), Channel.ReliableOrdered);
-            return true;
+            _transport.Send(connectionId, _scratch.AsSegment(), Channel.ReliableOrdered);
         }
 
         public int PlayerCount => _sessions.Count;
@@ -115,7 +133,9 @@ namespace Brinehold.Server
         /// <summary>Advances the match by exactly one simulation tick.</summary>
         public void Tick()
         {
-            _network.Tick();
+            _transport.Poll();
+            AcceptPendingConnections();
+            RemoveLostConnections();
             RefillRateLimiters();
             DrainClientPackets();
 
@@ -129,7 +149,33 @@ namespace Brinehold.Server
                 Session session = _sessions[i];
                 ArraySegment<byte> packet = Replication.BuildPacket(session.PlayerId);
                 if (packet.Count == 0) continue;   // nothing this player can see changed
-                _network.SendToClient(session.ConnectionId, packet, Channel.ReliableOrdered);
+                _transport.Send(session.ConnectionId, packet, Channel.ReliableOrdered);
+            }
+        }
+
+        /// <summary>
+        /// A transport-level connection is not yet a player. The session is created when the client
+        /// sends a Hello that passes the version and content checks; until then the connection can
+        /// send nothing that reaches the simulation.
+        /// </summary>
+        private void AcceptPendingConnections()
+        {
+            while (_transport.TryAcceptConnection(out int connectionId))
+                _awaitingHello.Add(connectionId);
+        }
+
+        private void RemoveLostConnections()
+        {
+            while (_transport.TryTakeDisconnection(out int connectionId))
+            {
+                _awaitingHello.Remove(connectionId);
+                for (int i = 0; i < _sessions.Count; i++)
+                {
+                    if (_sessions[i].ConnectionId != connectionId) continue;
+                    Disconnected.Add(_sessions[i].PlayerId);
+                    _sessions.RemoveAt(i);
+                    break;
+                }
             }
         }
 
@@ -145,19 +191,34 @@ namespace Brinehold.Server
 
         private void DrainClientPackets()
         {
-            while (_network.TryReceiveServer(out int connection, out ArraySegment<byte> payload))
+            while (_transport.TryReceive(out int connection, out ArraySegment<byte> payload))
             {
                 Session? session = FindSession(connection);
-                if (session == null) continue;   // unknown connection: ignore entirely
-
                 var reader = new BitReader(payload.Array!, payload.Offset, payload.Count);
+
                 while (reader.BitsRemaining >= 8)
                 {
                     var type = (MessageType)reader.ReadByte();
                     if (reader.EndOfStream) break;
 
+                    // Before the handshake the only message a connection may send is Hello. Anything
+                    // else from an unauthenticated peer is dropped without being parsed further.
+                    if (session == null)
+                    {
+                        if (type != MessageType.Hello) break;
+                        HelloMessage hello = MessageCodec.ReadHello(reader);
+                        if (reader.EndOfStream) break;
+                        HandleHello(connection, hello);
+                        session = FindSession(connection);
+                        continue;
+                    }
+
                     switch (type)
                     {
+                        case MessageType.Hello:
+                            MessageCodec.ReadHello(reader);   // already handshaken: ignore
+                            break;
+
                         case MessageType.ClientCommand:
                             HandleCommand(session, reader);
                             break;
@@ -175,6 +236,20 @@ namespace Brinehold.Server
                     if (reader.EndOfStream) break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Completes the handshake for a connection that has just introduced itself. A refusal is
+        /// answered with a Welcome carrying the reason, so the client can tell the player whether
+        /// their build is out of date rather than simply failing to connect.
+        /// </summary>
+        private void HandleHello(int connectionId, HelloMessage hello)
+        {
+            if (!_awaitingHello.Contains(connectionId)) return;
+            _awaitingHello.Remove(connectionId);
+
+            string name = string.IsNullOrEmpty(hello.PlayerName) ? $"Player {_sessions.Count + 1}" : hello.PlayerName;
+            TryConnect(connectionId, name, hello.ProtocolVersion, hello.ContentHash, out _);
         }
 
         private void HandleCommand(Session session, BitReader reader)

@@ -3,33 +3,55 @@ using System;
 namespace Brinehold.Net.Transport
 {
     /// <summary>
-    /// Reliability class for a packet. The production transport implements these over UDP with
-    /// retransmission and sequencing; the loopback transport models their observable behaviour so
-    /// that tests can reason about loss without a real network.
+    /// Reliability class for a packet.
+    ///
+    /// Reliable-ordered carries anything whose loss would change what a player sees: the handshake,
+    /// commands, entity lifecycle, intents and private state. Unreliable-sequenced carries
+    /// corrections, which are superseded by the next one and are not worth retransmitting.
     /// </summary>
     public enum Channel : byte
     {
-        /// <summary>Handshake, commands, lifecycle, intents and private state. Never dropped.</summary>
         ReliableOrdered = 0,
-        /// <summary>Corrections and aggregates. May be dropped; the next one supersedes it.</summary>
         UnreliableSequenced = 1
     }
 
     /// <summary>
-    /// The seam between the game and the wire.
+    /// The server's end of the wire.
     ///
-    /// Everything above this interface is transport-agnostic, which is what lets the same server
-    /// binary run over an in-process loopback in tests, over Unity Transport in production, and
-    /// over LiteNetLib if we ever need to swap (MULTIPLAYER_ARCHITECTURE.md decision D7).
+    /// Everything above this interface is transport-agnostic, which is what lets the same MatchHost
+    /// run over an in-process loopback in tests and over UDP in production without a second code
+    /// path (MULTIPLAYER_ARCHITECTURE.md decision D7).
     /// </summary>
-    public interface ITransport
+    public interface IServerTransport : IDisposable
     {
+        /// <summary>Sends to one connection. Unknown connection ids are ignored, not thrown on.</summary>
         void Send(int connectionId, ArraySegment<byte> payload, Channel channel);
 
-        /// <summary>Returns false when nothing is waiting. The buffer is valid until the next call.</summary>
+        /// <summary>
+        /// Next payload from any client, or false when nothing is waiting. The buffer is valid only
+        /// until the next call.
+        /// </summary>
         bool TryReceive(out int connectionId, out ArraySegment<byte> payload);
 
-        /// <summary>Advances any time-based behaviour. Called once per simulation tick.</summary>
+        /// <summary>A client that has just completed the transport-level handshake.</summary>
+        bool TryAcceptConnection(out int connectionId);
+
+        /// <summary>A connection that has gone away, so its session can be cleaned up.</summary>
+        bool TryTakeDisconnection(out int connectionId);
+
+        /// <summary>Drives retransmission and timeouts. Called once per simulation tick.</summary>
+        void Poll();
+    }
+
+    /// <summary>The client's end of the wire.</summary>
+    public interface IClientTransport : IDisposable
+    {
+        bool IsConnected { get; }
+
+        void Send(ArraySegment<byte> payload, Channel channel);
+
+        bool TryReceive(out ArraySegment<byte> payload);
+
         void Poll();
     }
 }

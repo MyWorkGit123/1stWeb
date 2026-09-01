@@ -30,8 +30,24 @@ namespace Brinehold.Server
             MatchConfig config = MatchConfig.TwoPlayer(seed);
             config.PlayerCount = players;
 
+            int port = ArgInt(args, "--port", 0);
+            MatchHost host;
+
+            if (port > 0)
+            {
+                // Dedicated mode: a real UDP socket. Clients connect, introduce themselves, and are
+                // given a player slot only once their protocol version and content hash match.
+                var transport = new UdpServerTransport(port);
+                host = new MatchHost(config, transport);
+                Console.WriteLine($"Listening on UDP {transport.LocalEndPoint}");
+                Console.WriteLine($"Map {config.MapWidth}x{config.MapHeight}, content hash {config.ContentHash():X16}");
+                Console.WriteLine($"Waiting for {players} players…");
+                RunDedicated(host, transport, ticks);
+                return 0;
+            }
+
             var network = new LoopbackNetwork(NetworkConditions.Perfect);
-            var host = new MatchHost(config, network);
+            host = new MatchHost(config, network);
 
             for (int i = 0; i < players; i++)
                 host.TryConnect(i, $"Player {i + 1}", Protocol.ProtocolVersion.Current, config.ContentHash(), out _);
@@ -47,6 +63,57 @@ namespace Brinehold.Server
 
             RunRealTime(host, ticks);
             return 0;
+        }
+
+        /// <summary>
+        /// The dedicated-server loop: hold the tick rate, wait for players, then run the match.
+        ///
+        /// The tick is paced against a monotonic clock rather than by sleeping a fixed interval, so
+        /// a slow tick is absorbed by the next one instead of drifting the whole match.
+        /// </summary>
+        private static void RunDedicated(MatchHost host, UdpServerTransport transport, int maxTicks)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            long nextTickMs = 0;
+            bool running = true;
+            bool announced = false;
+
+            Console.CancelKeyPress += (_, e) => { e.Cancel = true; running = false; };
+
+            while (running)
+            {
+                long now = stopwatch.ElapsedMilliseconds;
+                if (now < nextTickMs) { Thread.Sleep(1); continue; }
+
+                host.Tick();
+                nextTickMs += SimConstants.MillisecondsPerTick;
+
+                if (!announced && host.AllPlayersConnected)
+                {
+                    announced = true;
+                    Console.WriteLine($"All {host.PlayerCount} players connected. Match running.");
+                }
+
+                if (host.World.Tick % 200 == 0 && announced)
+                {
+                    Console.WriteLine($"tick {host.World.Tick}  hash {host.World.ComputeStateHash():X16}  " +
+                                      $"connections {transport.ConnectionCount}  retransmits {transport.Retransmissions}");
+                }
+
+                if (host.World.MatchOver)
+                {
+                    Console.WriteLine($"Match over at tick {host.World.Tick}. Winning team: {host.World.WinningTeam}");
+                    break;
+                }
+
+                if (maxTicks > 0 && host.World.Tick >= (uint)maxTicks) break;
+            }
+
+            for (int p = 0; p < host.PlayerCount; p++)
+                Console.WriteLine(host.Replication.Stats.Summary(p, host.World.Tick));
+
+            transport.Dispose();
+            Console.WriteLine("Server stopped.");
         }
 
         private static void RunRealTime(MatchHost host, int maxTicks)

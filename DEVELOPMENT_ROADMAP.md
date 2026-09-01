@@ -74,12 +74,13 @@ M0  Architecture ──► M1 Foundations ──► M2 Network spine ──► �
 
 ---
 
-## M2 — Network spine 🟢 **ACCEPTANCE MET (loopback); SOCKET TRANSPORT OUTSTANDING**
+## M2 — Network spine ✅ **COMPLETE**
 
-> Every acceptance criterion below passes. **Outstanding deliverables:** the Unity Transport adapter
-> and packet fragmentation. `ITransport` exists and `LoopbackNetwork` implements the behaviour
-> faithfully, but nothing has crossed a real network interface, which is why two-machine play is
-> blocked until M4.
+> Every acceptance criterion below passes, over both the loopback and real UDP sockets. The socket
+> transport was brought forward from M4 because without it nothing crossed a network interface.
+> A dedicated Unity Transport adapter is still worth adding for the Unity client, but it is now an
+> optimisation rather than a blocker: `IServerTransport` / `IClientTransport` are the seam, and the
+> UDP implementation behind them is tested at 20% packet loss.
 
 **Goal:** an authoritative server and a connected client exchanging validated commands and
 replicated state — with no gameplay in it yet.
@@ -135,8 +136,12 @@ and synchronisation — at the smallest scale that can prove them.
 - [x] 200 ms latency + 5% packet loss: no desync, stall or state corruption
 - [x] Tick cost far inside budget — 0.071 ms measured against a 5 ms target
 - [x] A modified client sending illegal commands achieves **nothing** — 11 cheat-client tests over the real wire
+- [x] A match runs between separate operating-system processes over real UDP — server plus two
+      clients, verified by `tools/dev/run-networked-match.sh` and by 10 socket-level tests
 - [ ] The UI says a stranded worker is stranded — needs the Unity client
-- [ ] The manual test script passes on two machines over a LAN — **blocked on the socket transport (M4)**
+- [ ] The manual test script passes on **two physical machines** — the process-level test passes on
+      one machine; the same commands take a `--host` argument, but this has not been run on two
+      machines
 
 **Gate:** ✋ **STOP. Full playtest and review before any expansion. Expansion is one system at a time.**
 
@@ -150,8 +155,10 @@ and synchronisation — at the smallest scale that can prove them.
 - `Brinehold.Tools.ReplayCheck`; golden replay corpus
 - `determinism.yml`: three-platform matrix on every PR
 - Snapshot serialisation + the server snapshot ring
-- `Brinehold.Tools.LoadTest`: N headless bot clients
+- `Brinehold.Tools.LoadTest`: N headless bot clients — *`Brinehold.Tools.TestClient` is the seed*
 - Structured server logging, metrics, crash dumps
+- Kick a persistently flooding client rather than only throttling it
+- ~~UDP transport~~ — *done early, in M2*
 
 **Acceptance**
 - [ ] A recorded prototype match replays to identical state hashes on all three CI platforms

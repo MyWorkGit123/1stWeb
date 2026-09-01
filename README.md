@@ -7,10 +7,9 @@ physical production chains and vertical cliffside logistics, wrapped in Age-of-E
 competitive RTS structure — 2 to 8 players, real time, server-authoritative.
 
 **Engine:** Unity 6 LTS · C#
-**Status:** 🟢 The prototype's **simulation, server and networking are built, tested and measured** —
-**175 tests** pass headlessly (`dotnet test`, no Unity needed).
-🟡 The **Unity client is written but has never been compiled**, and two-machine play awaits the
-socket transport. See [`unity/README.md`](unity/README.md).
+**Status:** 🟢 The prototype **plays a real match across separate processes over UDP** — server plus
+two clients, with **185 tests** passing headlessly (`dotnet test`, no Unity needed).
+🟡 The **Unity client is written but has never been compiled**. See [`unity/README.md`](unity/README.md).
 
 ---
 
@@ -69,9 +68,19 @@ tests/      golden replays, test maps, fixtures
 ## Try it
 
 ```bash
-dotnet test Brinehold.sln                 # 175 tests: maths, game rules, networking, client, anti-cheat
+dotnet test Brinehold.sln                 # 185 tests: maths, game rules, networking, client, anti-cheat
+tools/dev/run-networked-match.sh          # server + two clients, three processes, real UDP sockets
 tools/dev/benchmark.sh                    # a ten-minute match measured for tick cost and bandwidth
 tools/dev/run-local-match.sh              # a real-time headless match
+```
+
+Across two machines:
+
+```bash
+# on the server machine
+dotnet run -c Release --project src/Brinehold.Server -- --port 7777 --players 2
+# on each client machine
+dotnet run -c Release --project src/Brinehold.Tools.TestClient -- --host <server-ip> --port 7777 --name Alice
 ```
 
 Measured on one core, two players, ten minutes of match time:
@@ -95,15 +104,19 @@ The **Unity client** is written but **has never been compiled** — it was built
 with the .NET SDK and no Unity editor. Expect a bring-up session. The logic it leans on is tested;
 the MonoBehaviour adapter layer is not. See [`unity/README.md`](unity/README.md).
 
+Networking: a UDP transport with sequence numbers, a rolling acknowledgement field,
+retransmission, fragmentation and timeouts — verified by a match played between three separate
+operating-system processes, and by a run at 20% simulated packet loss.
+
 ## What does not exist yet
 
-**Socket transport** — `LoopbackNetwork` is real and tested but in-process, so two machines cannot
-play each other yet. Also outstanding: the no-float and no-Unity analysers, a JSON content package,
-reconnection, replays and spectating (M4–M6).
+The no-float and no-Unity analysers, a JSON content package, reconnection, replays and spectating
+(M4–M6), and every system beyond the prototype's scope (production chains, vertical building,
+population, the full combat and naval rosters, technology, diplomacy, AI).
 
 ## Next step
 
-The socket transport, so the two-client match that already runs in tests can run across a network.
+Bring up the Unity client — it is the only part of the prototype that has never been compiled.
 
 ---
 

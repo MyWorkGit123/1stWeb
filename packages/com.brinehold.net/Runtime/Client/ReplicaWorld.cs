@@ -50,6 +50,12 @@ namespace Brinehold.Net.Client
 
         public readonly NavGrid Nav;
         public byte LocalPlayer { get; private set; }
+
+        /// <summary>True once the server has accepted this client into a player slot.</summary>
+        public bool Welcomed { get; private set; }
+
+        /// <summary>The server's handshake verdict, so a refused client can explain itself.</summary>
+        public HandshakeResult Handshake { get; private set; } = HandshakeResult.Accepted;
         public uint Tick { get; private set; }
         public bool MatchOver { get; private set; }
         public bool LocalPlayerWon { get; private set; }
@@ -140,7 +146,12 @@ namespace Brinehold.Net.Client
 
                     case MessageType.Welcome:
                         WelcomeMessage welcome = MessageCodec.ReadWelcome(reader);
-                        LocalPlayer = welcome.PlayerId;
+                        Handshake = welcome.Result;
+                        if (welcome.Result == HandshakeResult.Accepted)
+                        {
+                            LocalPlayer = welcome.PlayerId;
+                            Welcomed = true;
+                        }
                         break;
 
                     default:
