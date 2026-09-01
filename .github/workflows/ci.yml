@@ -35,6 +35,30 @@ jobs:
       - name: Compile the Unity client scripts
         run: dotnet build tools/unity-compile-check/Brinehold.Unity.CompileCheck.csproj -c Release --nologo
 
+      # Developer scripts are part of the deliverable. A .ps1 that does not parse is as broken as
+      # code that does not compile, and it fails on the user's machine rather than here.
+      - name: Parse-check PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($file in Get-ChildItem -Recurse -Filter *.ps1 |
+                            Where-Object { $_.FullName -notmatch 'artifacts|obj|bin' }) {
+              $errors = $null
+              $tokens = $null
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+              if ($errors -and $errors.Count -gt 0) {
+                  $failed = $true
+                  Write-Host "PARSE ERRORS in $($file.Name):"
+                  foreach ($e in $errors) {
+                      Write-Host ("  line {0}: {1}" -f $e.Extent.StartLineNumber, $e.Message)
+                  }
+              } else {
+                  Write-Host "ok: $($file.Name)"
+              }
+          }
+          if ($failed) { exit 1 }
+
       - name: Validate content
         run: dotnet run --no-build -c Release --project src/Brinehold.Tools.ContentCheck -- --compare-default
 

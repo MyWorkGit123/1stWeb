@@ -156,6 +156,39 @@ namespace Brinehold.Sim.Tests
                 string.Join("\n  ", violations));
         }
 
+        /// <summary>
+        /// Windows PowerShell 5.1 reads a .ps1 without a byte-order mark as Windows-1252, so a UTF-8
+        /// character decodes into several bytes of mojibake. An em dash is the nastiest: its final
+        /// byte, 0x94, is a smart closing quote, which silently terminates a string and produces a
+        /// parse error pointing at a line twenty further down. This cost a round trip once; the
+        /// rule is that developer scripts stay pure ASCII.
+        /// </summary>
+        [Fact]
+        public void PowerShellScriptsArePureAscii()
+        {
+            string root = RepositoryRoot();
+            var violations = new List<string>();
+
+            foreach (string file in Directory.GetFiles(root, "*.ps1", SearchOption.AllDirectories))
+            {
+                if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")) continue;
+                if (file.Contains($"{Path.DirectorySeparatorChar}artifacts{Path.DirectorySeparatorChar}")) continue;
+
+                byte[] bytes = File.ReadAllBytes(file);
+                int start = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+
+                for (int i = start; i < bytes.Length; i++)
+                {
+                    if (bytes[i] < 128) continue;
+                    violations.Add($"{Path.GetRelativePath(root, file)}: non-ASCII byte 0x{bytes[i]:X2} at offset {i}");
+                    break;
+                }
+            }
+
+            Assert.True(violations.Count == 0,
+                "PowerShell scripts must be pure ASCII:\n  " + string.Join("\n  ", violations));
+        }
+
         [Fact]
         public void TheSimulationAssemblyDependsOnlyOnCore()
         {
