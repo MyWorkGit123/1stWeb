@@ -52,6 +52,12 @@ namespace Brinehold.Server
         public readonly ReplicationServer Replication;
         public readonly MatchConfig Config;
 
+        /// <summary>
+        /// Records the match. Always on: a replay costs a few bytes per order and is the difference
+        /// between a bug report you can reproduce and one you can only read about.
+        /// </summary>
+        public readonly Brinehold.Sim.Replay.ReplayWriter Replay;
+
         /// <summary>Commands refused before they ever reached the simulation.</summary>
         public int RejectedBeforeSimulation { get; private set; }
 
@@ -61,6 +67,7 @@ namespace Brinehold.Server
             World = new SimWorld(config);
             PrototypeMap.Build(World);
             Replication = new ReplicationServer(World);
+            Replay = new Brinehold.Sim.Replay.ReplayWriter(config);
             _transport = transport;
         }
 
@@ -151,6 +158,8 @@ namespace Brinehold.Server
                 if (packet.Count == 0) continue;   // nothing this player can see changed
                 _transport.Send(session.ConnectionId, packet, Channel.ReliableOrdered);
             }
+
+            RecordReplayCheckpoints();
         }
 
         /// <summary>
@@ -178,6 +187,25 @@ namespace Brinehold.Server
                 }
             }
         }
+
+        /// <summary>
+        /// Writes a state fingerprint every 200 ticks, and the result when the match ends. Playback
+        /// checks these, so a determinism regression is caught by CI rather than by a player.
+        /// </summary>
+        private void RecordReplayCheckpoints()
+        {
+            if (World.Tick % SimConstants.StateHashInterval == 0)
+                Replay.RecordStateHash(World.Tick, World.ComputeStateHash());
+
+            if (World.MatchOver && !_recordedEnd)
+            {
+                _recordedEnd = true;
+                Replay.RecordStateHash(World.Tick, World.ComputeStateHash());
+                Replay.RecordEnd(World.Tick, World.WinningTeam);
+            }
+        }
+
+        private bool _recordedEnd;
 
         private void RefillRateLimiters()
         {
@@ -276,6 +304,10 @@ namespace Brinehold.Server
 
             session.Tokens -= 100;
             session.LastSequence = command.Sequence;
+
+            // Recorded against the tick it will execute on, not the tick it arrived: replaying by
+            // arrival would re-order anything the network delayed.
+            Replay.RecordCommand(World.Tick + 1, command);
             World.EnqueueCommand(command);
         }
 

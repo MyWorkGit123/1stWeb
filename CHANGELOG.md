@@ -4,8 +4,8 @@ All notable changes to this project are recorded here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning will follow [Semantic Versioning](https://semver.org/) once there is a build to version.
 
-**Project status: the prototype plays a real match across separate processes over UDP.**
-185 tests pass headlessly. The Unity client exists as source but has never been compiled — see
+**Project status: the prototype plays a real match across separate processes over UDP, and records
+replays that reproduce it exactly.** 199 tests pass headlessly. The Unity client exists as source but has never been compiled — see
 `unity/README.md`.
 
 ---
@@ -111,9 +111,31 @@ matching state hash progression on the server and correct fog isolation between 
   a stream that had arrived perfectly well: **227 needless retransmissions in a 40-second match**.
   Clients now acknowledge within 25 ms, taking that to **0**.
 
+#### Replays and the determinism gate (M4)
+- Replay format: a match configuration plus the command stream, with a state fingerprint every 200
+  ticks. Because the simulation is deterministic, replaying the commands reproduces the match
+  exactly — **a ten-minute two-player match is 953 bytes**.
+- `ReplayWriter` records every accepted command against the tick it will execute on, not the tick it
+  arrived, so network delay cannot re-order a replay. Recording is always on.
+- `ReplayPlayer` re-simulates and reports divergence *with the tick it first appeared on*, which is
+  what a developer bisecting a determinism bug actually needs.
+- `Brinehold.Tools.ReplayCheck`: verifies one replay or a whole directory, and `--break-at-tick N`
+  stops on a chosen tick and dumps the world state there.
+- The replay codec is deliberately independent of the wire format, so a protocol change does not
+  invalidate the replay archive.
+- Golden corpus in `tests/replays/`, verified by both the tool and the test suite.
+- `determinism.yml` now runs the corpus on **ubuntu, windows and macos** — the macOS runner is
+  arm64, so it also covers the cross-architecture case.
+
+Tests prove the round trip end to end: a scripted match is played, recorded, replayed, and required
+to match at every checkpoint and in its final economy. Falsifying a checkpoint is detected; dropping
+a single command is detected; a truncated replay still parses what it recorded; and random bytes are
+rejected rather than throwing.
+
 #### Testing and tooling
-- 50 core tests, 62 simulation tests, 38 client tests, 35 networked integration tests (10 of them
-  over real UDP sockets, including one at 20% packet loss and one played through to victory).
+- 199 tests: 50 core, 62 simulation, 38 client, 49 networked integration (10 over real UDP sockets,
+  including one at 20% packet loss and one played through to victory; 10 replay round-trip tests;
+  and the golden corpus).
 - Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
   client that forges player ids, orders enemy units, tampers with local state, floods commands,
   replays sequence numbers and sends malformed packets — all with no effect on the world.

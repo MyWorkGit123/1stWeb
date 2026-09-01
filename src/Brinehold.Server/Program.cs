@@ -24,6 +24,7 @@ namespace Brinehold.Server
             ulong seed = (ulong)ArgInt(args, "--seed", 1);
             int ticks = ArgInt(args, "--ticks", 0);
             bool benchmark = HasFlag(args, "--benchmark");
+            string? replayOut = ArgString(args, "--record", null);
 
             Console.WriteLine($"Brinehold server — {players} players, seed {seed}, {SimConstants.TicksPerSecond} Hz");
 
@@ -43,6 +44,7 @@ namespace Brinehold.Server
                 Console.WriteLine($"Map {config.MapWidth}x{config.MapHeight}, content hash {config.ContentHash():X16}");
                 Console.WriteLine($"Waiting for {players} players…");
                 RunDedicated(host, transport, ticks);
+                WriteReplay(host, replayOut);
                 return 0;
             }
 
@@ -58,11 +60,36 @@ namespace Brinehold.Server
             {
                 if (HasFlag(args, "--busy")) StartEveryoneWorking(host);
                 RunBenchmark(host, ticks > 0 ? ticks : 6000);
+                WriteReplay(host, replayOut);
                 return 0;
             }
 
             RunRealTime(host, ticks);
+            WriteReplay(host, replayOut);
             return 0;
+        }
+
+        /// <summary>
+        /// Writes the recorded match to disk. Every match is recorded in memory regardless; this is
+        /// what makes it durable, and it is how the golden corpus that CI verifies is produced.
+        /// </summary>
+        private static void WriteReplay(MatchHost host, string? path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+
+            string? directory = System.IO.Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) System.IO.Directory.CreateDirectory(directory);
+
+            byte[] bytes = host.Replay.ToArray();
+            System.IO.File.WriteAllBytes(path, bytes);
+            Console.WriteLine($"Replay written: {path} ({bytes.Length:N0} bytes, " +
+                              $"{host.Replay.CommandCount} commands, {host.Replay.CheckpointCount} checkpoints)");
+        }
+
+        private static string? ArgString(string[] args, string name, string? fallback)
+        {
+            for (int i = 0; i < args.Length - 1; i++) if (args[i] == name) return args[i + 1];
+            return fallback;
         }
 
         /// <summary>
@@ -172,8 +199,13 @@ namespace Brinehold.Server
                 Brinehold.Core.Collections.EntityId forest = Brinehold.Sim.Map.PrototypeMap.FindNearestNode(
                     host.World, host.World.Entities.Position[workers[0].Index], ResourceNodeType.Forest);
 
-                host.World.EnqueueCommand(
-                    Brinehold.Sim.Commands.Command.Harvest(player, 1, workers.ToArray(), forest));
+                Brinehold.Sim.Commands.Command order =
+                    Brinehold.Sim.Commands.Command.Harvest(player, 1, workers.ToArray(), forest);
+
+                // Record as well as enqueue: a scenario that bypasses the recorder would produce a
+                // replay that does not reproduce the match it came from.
+                host.Replay.RecordCommand(host.World.Tick + 1, order);
+                host.World.EnqueueCommand(order);
             }
         }
 

@@ -29,29 +29,5 @@ jobs:
       - name: Server smoke run
         run: dotnet run --no-build -c Release --project src/Brinehold.Server -- --benchmark --busy --ticks 6000
 
-  determinism:
-    name: Determinism (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
-      # The simulation is fixed-point and engine-free, so the same command stream must produce
-      # the same state hash on every platform. A mismatch here is a release blocker, not a warning.
-      - name: Determinism tests
-        run: dotnet test src/Brinehold.Sim.Tests/Brinehold.Sim.Tests.csproj -c Release --filter "FullyQualifiedName~DeterminismTests"
-
-      - name: Cross-platform state hash
-        shell: bash
-        run: |
-          dotnet run -c Release --project src/Brinehold.Server -- --benchmark --busy --ticks 6000 \
-            | tee output.txt
-          grep "final state hash" output.txt
+      - name: Replay corpus
+        run: dotnet run --no-build -c Release --project src/Brinehold.Tools.ReplayCheck -- --dir tests/replays

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Brinehold.Tools.ReplayCheck</RootNamespace>
+    <AssemblyName>Brinehold.Tools.ReplayCheck</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../packages/com.brinehold.core/Brinehold.Core.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.sim/Brinehold.Sim.csproj" />
+  </ItemGroup>
+</Project>

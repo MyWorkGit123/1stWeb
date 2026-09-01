@@ -7,8 +7,8 @@ physical production chains and vertical cliffside logistics, wrapped in Age-of-E
 competitive RTS structure — 2 to 8 players, real time, server-authoritative.
 
 **Engine:** Unity 6 LTS · C#
-**Status:** 🟢 The prototype **plays a real match across separate processes over UDP** — server plus
-two clients, with **185 tests** passing headlessly (`dotnet test`, no Unity needed).
+**Status:** 🟢 The prototype **plays a real match across separate processes over UDP** and **records
+replays that reproduce it exactly** — **199 tests** passing headlessly (`dotnet test`, no Unity needed).
 🟡 The **Unity client is written but has never been compiled**. See [`unity/README.md`](unity/README.md).
 
 ---
@@ -61,14 +61,15 @@ tools/      build, CI and developer scripts
 tests/      golden replays, test maps, fixtures
 ```
 
-*`unity/` is still a scaffold; everything else contains working, tested code.*
+*`unity/` holds source that has never been compiled; everything else is working, tested code.*
 
 ---
 
 ## Try it
 
 ```bash
-dotnet test Brinehold.sln                 # 185 tests: maths, game rules, networking, client, anti-cheat
+dotnet test Brinehold.sln                 # 199 tests: maths, game rules, networking, client, anti-cheat
+tools/ci/verify-replays.sh                # re-simulate the golden replay corpus and check the hashes
 tools/dev/run-networked-match.sh          # server + two clients, three processes, real UDP sockets
 tools/dev/benchmark.sh                    # a ten-minute match measured for tick cost and bandwidth
 tools/dev/run-local-match.sh              # a real-time headless match
@@ -108,10 +109,13 @@ Networking: a UDP transport with sequence numbers, a rolling acknowledgement fie
 retransmission, fragmentation and timeouts — verified by a match played between three separate
 operating-system processes, and by a run at 20% simulated packet loss.
 
+Replays: every match is recorded as its command stream and reproduces exactly on playback — a
+ten-minute match is 953 bytes. `ReplayCheck` verifies the corpus, and CI runs it on Linux, Windows
+and macOS-arm64.
+
 ## What does not exist yet
 
-The no-float and no-Unity analysers, a JSON content package, reconnection, replays and spectating
-(M4–M6), and every system beyond the prototype's scope (production chains, vertical building,
+The no-float and no-Unity analysers, a JSON content package, reconnection and spectating (M6), and every system beyond the prototype's scope (production chains, vertical building,
 population, the full combat and naval rosters, technology, diplomacy, AI).
 
 ## Next step

@@ -135,10 +135,11 @@ a LAN**, not only on one machine.
 
 | Route | Status |
 |---|---|
-| **Headless, automated** — `dotnet test Brinehold.sln` | ✅ 175 tests. Covers everything in 7.2 except the human-in-the-loop steps |
+| **Headless, automated** — `dotnet test Brinehold.sln` | ✅ 185 tests. Covers everything in 7.2 except the human-in-the-loop steps |
 | **Headless, measured** — `tools/dev/benchmark.sh` | ✅ Tick cost, per-tier bandwidth, state hash |
 | **Unity, one machine, listen mode** | ⚠️ Written, never compiled — see `unity/README.md` |
-| **Two machines over a LAN** | ❌ Blocked on the socket transport (M4). `LoopbackNetwork` is in-process only |
+| **Separate processes over UDP** — `tools/dev/run-networked-match.sh` | ✅ Server plus two clients, real sockets |
+| **Two physical machines** | ⚠️ The same commands take `--host`, but this has not been run on two machines |
 
 ```bash
 # The automated equivalent of most of the checklist below
