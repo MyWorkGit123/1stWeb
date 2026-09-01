@@ -29,5 +29,8 @@ jobs:
       - name: Server smoke run
         run: dotnet run --no-build -c Release --project src/Brinehold.Server -- --benchmark --busy --ticks 6000
 
+      - name: Validate content
+        run: dotnet run --no-build -c Release --project src/Brinehold.Tools.ContentCheck -- --compare-default
+
       - name: Replay corpus
         run: dotnet run --no-build -c Release --project src/Brinehold.Tools.ReplayCheck -- --dir tests/replays

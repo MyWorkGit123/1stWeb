@@ -58,7 +58,7 @@ namespace Brinehold.Sim.Systems
                     world.SetJobIfChanged(i, JobType.Building, store.Position[i], site);
                 }
 
-                store.BuildProgress[site.Index] += PrototypeContent.BuildProgressPerWorkerTick;
+                store.BuildProgress[site.Index] += world.Content.BuildProgressPerWorkerTick;
             }
 
             // Complete any site that has reached its required labour.
@@ -74,13 +74,13 @@ namespace Brinehold.Sim.Systems
 
                 BuildingType type = store.Building[b];
                 byte owner = store.Owner[b];
-                PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(type);
+                ContentDatabase.BuildingStats stats = world.Content.Building(type);
 
                 if (owner < world.Players.Length && stats.PopulationCapacity > 0)
                 {
                     world.Players[owner].PopulationCap = System.Math.Min(
                         world.Players[owner].PopulationCap + stats.PopulationCapacity,
-                        PrototypeContent.MaxPopulationCap);
+                        world.Content.MaxPopulationCap);
                 }
 
                 world.Events.Add(new SimEvent

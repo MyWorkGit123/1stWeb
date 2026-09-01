@@ -81,6 +81,13 @@ namespace Brinehold.Tools.ReplayCheck
                               $"map {data.Header.MapWidth}x{data.Header.MapHeight}, " +
                               $"content hash {data.Header.ContentHash:X16}");
 
+            // A replay recorded against a different ruleset may still reproduce, but it is not
+            // evidence about the current build. Say so rather than letting it quietly pass.
+            ulong currentContent = data.Header.ToConfig().ContentHash();
+            if (currentContent != data.Header.ContentHash)
+                Console.WriteLine($"   NOTE     recorded against different content " +
+                                  $"(this build would be {currentContent:X16}) — regenerate the corpus");
+
             var player = new ReplayPlayer(data);
             var stopwatch = Stopwatch.StartNew();
 

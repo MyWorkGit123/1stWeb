@@ -112,6 +112,7 @@ namespace Brinehold.Sim.Tests
             foreach ((string path, string[] lines) in SourceFiles(
                          "packages/com.brinehold.core/Runtime",
                          "packages/com.brinehold.sim/Runtime",
+                         "packages/com.brinehold.content/Runtime",
                          "packages/com.brinehold.protocol/Runtime",
                          "packages/com.brinehold.net/Runtime",
                          "packages/com.brinehold.client/Runtime",

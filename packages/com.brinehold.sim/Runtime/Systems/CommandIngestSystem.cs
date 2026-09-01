@@ -153,7 +153,7 @@ namespace Brinehold.Sim.Systems
             if (!BuildPlacement.IsLegal(world, command.Building, command.TargetCellX, command.TargetCellY, out RejectReason placement))
                 return placement;
 
-            PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(command.Building);
+            ContentDatabase.BuildingStats stats = world.Content.Building(command.Building);
             PlayerState player = world.Players[command.PlayerId];
             if (!player.CanAfford(stats.CostWood, stats.CostFood, stats.CostStone, stats.CostCoin))
                 return RejectReason.NotEnoughResources;
@@ -188,13 +188,13 @@ namespace Brinehold.Sim.Systems
             EntityStore store = world.Entities;
             if (store.Kind[b] != EntityKind.Building) return RejectReason.WrongEntityKind;
             if (store.UnderConstruction[b]) return RejectReason.BuildingUnderConstruction;
-            if (!PrototypeContent.CanTrain(store.Building[b], command.TrainKind)) return RejectReason.CannotTrainHere;
+            if (!world.Content.CanTrain(store.Building[b], command.TrainKind)) return RejectReason.CannotTrainHere;
 
             // One queue per building in the prototype: a second kind cannot be interleaved.
             if (store.TrainingQueued[b] > 0 && store.TrainingKind[b] != command.TrainKind)
                 return RejectReason.CannotTrainHere;
 
-            PrototypeContent.UnitStats stats = PrototypeContent.ForKind(command.TrainKind);
+            ContentDatabase.UnitStats stats = world.Content.Unit(command.TrainKind);
             PlayerState player = world.Players[command.PlayerId];
 
             if (!player.CanAfford(stats.CostWood, stats.CostFood, stats.CostStone, stats.CostCoin))
@@ -222,7 +222,7 @@ namespace Brinehold.Sim.Systems
             if (store.Kind[b] != EntityKind.Building) return RejectReason.WrongEntityKind;
             if (store.TrainingQueued[b] <= 0) return RejectReason.NothingQueued;
 
-            PrototypeContent.UnitStats stats = PrototypeContent.ForKind(store.TrainingKind[b]);
+            ContentDatabase.UnitStats stats = world.Content.Unit(store.TrainingKind[b]);
             world.Players[command.PlayerId].Refund(stats.CostWood, stats.CostFood, stats.CostStone, stats.CostCoin);
 
             store.TrainingQueued[b]--;
@@ -286,7 +286,7 @@ namespace Brinehold.Sim.Systems
                 if (store.Kind[b] != EntityKind.Building) continue;
                 if (store.Owner[b] != player) continue;
                 if (store.TrainingQueued[b] <= 0) continue;
-                total += store.TrainingQueued[b] * PrototypeContent.ForKind(store.TrainingKind[b]).PopulationCost;
+                total += store.TrainingQueued[b] * world.Content.Unit(store.TrainingKind[b]).PopulationCost;
             }
             return total;
         }

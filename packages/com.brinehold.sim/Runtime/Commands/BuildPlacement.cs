@@ -16,7 +16,7 @@ namespace Brinehold.Sim.Commands
     {
         public static bool IsLegal(SimWorld world, BuildingType type, int cellX, int cellY, out RejectReason reason)
         {
-            PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(type);
+            ContentDatabase.BuildingStats stats = world.Content.Building(type);
             int half = stats.FootprintHalf;
             NavGrid nav = world.Nav;
 

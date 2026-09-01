@@ -22,6 +22,13 @@ namespace Brinehold.Sim.World
         public byte[] Teams = { 0, 1 };
         public string[] PlayerNames = { "Player 1", "Player 2" };
 
+        /// <summary>
+        /// The ruleset this match runs. Null means the shipped default. Its fingerprint is part of
+        /// the handshake, so a client with edited content is refused rather than quietly playing a
+        /// different game from everyone else.
+        /// </summary>
+        public Brinehold.Sim.Content.ContentDatabase? Content;
+
         public static MatchConfig TwoPlayer(ulong seed = 1) => new MatchConfig
         {
             Seed = seed,
@@ -39,6 +46,7 @@ namespace Brinehold.Sim.World
             hash.Add(MapHeight);
             hash.Add((int)Victory);
             for (int i = 0; i < PlayerCount && i < Teams.Length; i++) hash.Add((int)Teams[i]);
+            hash.Add((Content ?? Brinehold.Sim.Content.PrototypeContent.Default).ContentHash());
             return hash.Value;
         }
     }

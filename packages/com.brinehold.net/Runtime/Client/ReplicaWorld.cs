@@ -223,7 +223,7 @@ namespace Brinehold.Net.Client
                 Live = true
             };
 
-            Brinehold.Sim.Content.PrototypeContent.UnitStats stats =
+            Brinehold.Sim.Content.ContentDatabase.UnitStats stats =
                 Brinehold.Sim.Content.PrototypeContent.ForKind(m.Kind);
 
             entity.State.Value = new Replication.IntentExtrapolator.Entity

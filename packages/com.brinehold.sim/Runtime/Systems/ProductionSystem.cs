@@ -47,7 +47,7 @@ namespace Brinehold.Sim.Systems
 
                 store.TrainingQueued[b]--;
                 store.TrainingTimer[b] = store.TrainingQueued[b] > 0
-                    ? PrototypeContent.ForKind(kind).TrainTicks
+                    ? world.Content.Unit(kind).TrainTicks
                     : 0;
             }
         }
@@ -58,7 +58,7 @@ namespace Brinehold.Sim.Systems
         /// </summary>
         private static Fix2 FindSpawnPoint(SimWorld world, EntityStore store, int building, EntityKind kind)
         {
-            MovementDomain domain = PrototypeContent.ForKind(kind).Domain;
+            MovementDomain domain = world.Content.Unit(kind).Domain;
             int centre = world.Nav.CellAt(store.Position[building]);
             int cx = world.Nav.CellX(centre);
             int cy = world.Nav.CellY(centre);

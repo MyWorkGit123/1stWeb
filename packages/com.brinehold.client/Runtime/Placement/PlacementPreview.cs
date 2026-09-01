@@ -59,7 +59,7 @@ namespace Brinehold.Client.Placement
         /// </summary>
         private bool Evaluate(out string? reason)
         {
-            PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(Type);
+            ContentDatabase.BuildingStats stats = PrototypeContent.ForBuilding(Type);
             int half = stats.FootprintHalf;
 
             if (!_nav.InBounds(CellX - half, CellY - half) || !_nav.InBounds(CellX + half, CellY + half))

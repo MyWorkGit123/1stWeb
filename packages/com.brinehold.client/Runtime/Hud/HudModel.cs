@@ -39,14 +39,14 @@ namespace Brinehold.Client.Hud
 
         public bool CanAfford(BuildingType type)
         {
-            PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(type);
+            ContentDatabase.BuildingStats stats = PrototypeContent.ForBuilding(type);
             return Wood >= stats.CostWood && Food >= stats.CostFood
                 && Stone >= stats.CostStone && Coin >= stats.CostCoin;
         }
 
         public bool CanAfford(EntityKind kind)
         {
-            PrototypeContent.UnitStats stats = PrototypeContent.ForKind(kind);
+            ContentDatabase.UnitStats stats = PrototypeContent.ForKind(kind);
             return Wood >= stats.CostWood && Food >= stats.CostFood
                 && Stone >= stats.CostStone && Coin >= stats.CostCoin;
         }
@@ -57,7 +57,7 @@ namespace Brinehold.Client.Hud
         /// </summary>
         public string? BuildBlockedReason(BuildingType type)
         {
-            PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(type);
+            ContentDatabase.BuildingStats stats = PrototypeContent.ForBuilding(type);
             if (Wood < stats.CostWood) return $"Need {stats.CostWood - Wood} more wood";
             if (Stone < stats.CostStone) return $"Need {stats.CostStone - Stone} more stone";
             if (Food < stats.CostFood) return $"Need {stats.CostFood - Food} more food";
@@ -67,7 +67,7 @@ namespace Brinehold.Client.Hud
 
         public string? TrainBlockedReason(EntityKind kind)
         {
-            PrototypeContent.UnitStats stats = PrototypeContent.ForKind(kind);
+            ContentDatabase.UnitStats stats = PrototypeContent.ForKind(kind);
             if (PopulationUsed + stats.PopulationCost > PopulationCap) return "Build more housing first";
             if (Food < stats.CostFood) return $"Need {stats.CostFood - Food} more food";
             if (Wood < stats.CostWood) return $"Need {stats.CostWood - Wood} more wood";

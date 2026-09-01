@@ -37,13 +37,13 @@ namespace Brinehold.Sim.Systems
 
                     if (owner < world.Players.Length && !store.UnderConstruction[i])
                     {
-                        int capacity = PrototypeContent.ForBuilding(store.Building[i]).PopulationCapacity;
+                        int capacity = world.Content.Building(store.Building[i]).PopulationCapacity;
                         world.Players[owner].PopulationCap = System.Math.Max(0, world.Players[owner].PopulationCap - capacity);
                     }
                 }
                 else if (owner < world.Players.Length)
                 {
-                    int cost = PrototypeContent.ForKind(store.Kind[i]).PopulationCost;
+                    int cost = world.Content.Unit(store.Kind[i]).PopulationCost;
                     world.Players[owner].PopulationUsed = System.Math.Max(0, world.Players[owner].PopulationUsed - cost);
                 }
 

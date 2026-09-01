@@ -1,0 +1,19 @@
+{
+  "name": "prototype",
+
+  // Ticks to extract one unit from a resource node. At 20 ticks per second this is 0.6 s per unit,
+  // so a worker with a capacity of 8 spends about 5 s at the node per trip.
+  "harvestTicksPerUnit": 12,
+  "buildProgressPerWorkerTick": 1,
+
+  "startingWood": 200,
+  "startingFood": 200,
+  "startingStone": 100,
+  "startingCoin": 100,
+  "startingWorkers": 10,
+
+  // A player starts at their cap: ten workers against a base of 5 plus the settlement core's 5.
+  // The first decision of every match is therefore where the first house goes.
+  "basePopulationCap": 5,
+  "maxPopulationCap": 50
+}

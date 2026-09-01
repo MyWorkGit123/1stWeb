@@ -112,21 +112,21 @@ namespace Brinehold.Sim.Map
                 int by = StartCellY[p];
 
                 PlayerState state = world.Players[p];
-                state.Wood = PrototypeContent.StartingWood;
-                state.Food = PrototypeContent.StartingFood;
-                state.Stone = PrototypeContent.StartingStone;
-                state.Coin = PrototypeContent.StartingCoin;
-                state.PopulationCap = PrototypeContent.BasePopulationCap;
+                state.Wood = world.Content.StartingWood;
+                state.Food = world.Content.StartingFood;
+                state.Stone = world.Content.StartingStone;
+                state.Coin = world.Content.StartingCoin;
+                state.PopulationCap = world.Content.BasePopulationCap;
 
                 world.SpawnBuilding(BuildingType.Warehouse, player, bx, by, completed: true);
 
                 // Ten workers in a fixed ring around the core. Fixed order, so both machines agree
                 // on which entity id belongs to which worker.
                 int placed = 0;
-                for (int radius = 4; radius <= 10 && placed < PrototypeContent.StartingWorkers; radius++)
+                for (int radius = 4; radius <= 10 && placed < world.Content.StartingWorkers; radius++)
                 {
-                    for (int dy = -radius; dy <= radius && placed < PrototypeContent.StartingWorkers; dy++)
-                    for (int dx = -radius; dx <= radius && placed < PrototypeContent.StartingWorkers; dx++)
+                    for (int dy = -radius; dy <= radius && placed < world.Content.StartingWorkers; dy++)
+                    for (int dx = -radius; dx <= radius && placed < world.Content.StartingWorkers; dx++)
                     {
                         if (System.Math.Abs(dx) != radius && System.Math.Abs(dy) != radius) continue;
                         int x = bx + dx, y = by + dy;

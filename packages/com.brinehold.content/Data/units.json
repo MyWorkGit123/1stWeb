@@ -1,0 +1,48 @@
+{
+  // Distances are metres, speeds metres per second, times in ticks (20 per second).
+  // Design intent for these numbers is in COMBAT_DESIGN.md section 4.
+
+  "worker": {
+    "maxHealth": 60,
+    "moveSpeed": 1.4,
+    "visionRange": 12,
+    "attackDamage": 3,
+    "attackRange": 1,
+    "attackCooldownTicks": 30,
+    "carryCapacity": 8,
+    "trainTicks": 240,
+    "populationCost": 1,
+    "cost": { "food": 50 },
+    "domain": "land"
+  },
+
+  // Cutthroat: cheap, fast, and hopeless against armour once armour exists.
+  "soldier": {
+    "maxHealth": 60,
+    "moveSpeed": 3.2,
+    "visionRange": 14,
+    "attackDamage": 9,
+    "attackRange": 1.5,
+    "attackCooldownTicks": 20,
+    "carryCapacity": 0,
+    "trainTicks": 240,
+    "populationCost": 1,
+    "cost": { "food": 35, "coin": 15 },
+    "domain": "land"
+  },
+
+  // Cutter: the scout. Enormous vision, one gun, a long reload — it is for seeing, not fighting.
+  "ship": {
+    "maxHealth": 200,
+    "moveSpeed": 5,
+    "visionRange": 30,
+    "attackDamage": 20,
+    "attackRange": 20,
+    "attackCooldownTicks": 160,
+    "carryCapacity": 0,
+    "trainTicks": 900,
+    "populationCost": 3,
+    "cost": { "wood": 40, "coin": 40 },
+    "domain": "water"
+  }
+}

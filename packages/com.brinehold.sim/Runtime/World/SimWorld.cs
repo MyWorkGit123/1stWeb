@@ -20,6 +20,13 @@ namespace Brinehold.Sim.World
     public sealed class SimWorld
     {
         public readonly MatchConfig Config;
+
+        /// <summary>
+        /// Every tunable the simulation reads. Injected per match, so a tournament ruleset or a
+        /// balance experiment needs no code change — and so nothing in a system hard-codes a cost.
+        /// </summary>
+        public readonly Brinehold.Sim.Content.ContentDatabase Content;
+
         public readonly EntityStore Entities;
         public readonly NavGrid Nav;
         public readonly PathFinder Path;
@@ -42,9 +49,10 @@ namespace Brinehold.Sim.World
         /// <summary>Scratch buffer reused by systems that need a temporary entity list.</summary>
         internal readonly List<int> Scratch = new List<int>(256);
 
-        public SimWorld(MatchConfig config)
+        public SimWorld(MatchConfig config, Brinehold.Sim.Content.ContentDatabase? content = null)
         {
             Config = config;
+            Content = content ?? config.Content ?? Brinehold.Sim.Content.PrototypeContent.Default;
             Entities = new EntityStore();
             Nav = new NavGrid(config.MapWidth, config.MapHeight);
             Path = new PathFinder(Nav);
@@ -108,7 +116,7 @@ namespace Brinehold.Sim.World
 
         public EntityId SpawnUnit(EntityKind kind, byte owner, Fix2 position)
         {
-            PrototypeContent.UnitStats stats = PrototypeContent.ForKind(kind);
+            ContentDatabase.UnitStats stats = Content.Unit(kind);
             EntityId id = Entities.Create(kind, owner);
             int i = id.Index;
 
@@ -137,7 +145,7 @@ namespace Brinehold.Sim.World
         /// </summary>
         public EntityId SpawnBuilding(BuildingType type, byte owner, int cellX, int cellY, bool completed)
         {
-            PrototypeContent.BuildingStats stats = PrototypeContent.ForBuilding(type);
+            ContentDatabase.BuildingStats stats = Content.Building(type);
             EntityId id = Entities.Create(EntityKind.Building, owner);
             int i = id.Index;
 
@@ -157,7 +165,7 @@ namespace Brinehold.Sim.World
             if (completed && owner < Players.Length)
                 Players[owner].PopulationCap = System.Math.Min(
                     Players[owner].PopulationCap + stats.PopulationCapacity,
-                    PrototypeContent.MaxPopulationCap);
+                    Content.MaxPopulationCap);
 
             Events.Add(SimEvent.Spawned(id, owner, Entities.Position[i], EntityKind.Building));
             if (!completed)
@@ -173,8 +181,8 @@ namespace Brinehold.Sim.World
             Entities.Position[i] = new Fix2(Fix64.FromInt(cellX) + Fix64.Half, Fix64.FromInt(cellY) + Fix64.Half);
             Entities.Domain[i] = MovementDomain.Static;
             Entities.NodeType[i] = type;
-            Entities.NodeResource[i] = PrototypeContent.NodeResource(type);
-            Entities.NodeRemaining[i] = PrototypeContent.NodeCapacity(type);
+            Entities.NodeResource[i] = Content.Node(type).Yields;
+            Entities.NodeRemaining[i] = Content.Node(type).Capacity;
             Entities.MaxHealth[i] = Fix64.FromInt(1);
             Entities.Health[i] = Fix64.FromInt(1);
             Entities.FootprintHalf[i] = 0;

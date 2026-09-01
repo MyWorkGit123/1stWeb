@@ -5,8 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning will follow [Semantic Versioning](https://semver.org/) once there is a build to version.
 
 **Project status: the prototype plays a real match across separate processes over UDP, and records
-replays that reproduce it exactly, and survives a client disconnecting and rejoining.**
-210 tests pass headlessly. The Unity client exists as source but has never been compiled — see
+replays that reproduce it exactly, survives a client disconnecting and rejoining, and runs on data-driven content.**
+231 tests pass headlessly. The Unity client exists as source but has never been compiled — see
 `unity/README.md`.
 
 ---
@@ -164,10 +164,32 @@ convention, reporting the offending file and line:
 Each guard was verified by planting a violation and confirming it fails with the file and line, then
 reverting.
 
+#### Data-driven content (retires an M1 deliverable)
+- `ContentDatabase` replaces the static stat tables: every cost, rate, health value and starting
+  stock the simulation reads is now an injectable object. Systems read `world.Content`; nothing in
+  the simulation hard-codes a number any more.
+- `com.brinehold.content` loads that database from authored JSON. Content is written in decimal —
+  a worker walks at `1.4`, not at `6012954214` raw fixed-point units — and converted to fixed point
+  at one point in the loader, which is the only place a decimal touches the pipeline.
+- The JSON reader is written rather than taken from a package: content loads once, outside the tick,
+  so parsing speed is irrelevant, and having no third-party dependency avoids reconciling one
+  between the .NET server build and the Unity import. It reports the **line** a problem is on, and
+  it accepts `//` comments so a balance file can explain itself.
+- Partial content is legal: state one field of one unit and everything else keeps the shipped value.
+- **The database hashes itself, and that hash is part of the handshake.** A client that edits its
+  content to make its own units cheaper cannot join — the server will not recognise the build.
+- `ContentDatabase.Validate()` catches rulesets that load but are unplayable: nothing can train a
+  worker, no building accepts deliveries, the first house costs more than a player starts with.
+- `Brinehold.Tools.ContentCheck` runs that validation in CI and, with `--compare-default`, asserts
+  the JSON and the code defaults agree — they must, because the defaults are the fallback when no
+  content files are present.
+- `ReplayCheck` now warns when a replay was recorded against different content, so a stale corpus
+  cannot quietly pass as evidence about the current build.
+
 #### Testing and tooling
-- 210 tests: 50 core, 68 simulation, 38 client, 54 networked integration (10 over real UDP sockets
-  including one at 20% packet loss and one played to victory; 5 reconnection tests over real
-  sockets; 10 replay round-trip tests; and the golden corpus).
+- 231 tests: 50 core, 68 simulation, 38 client, 54 networked integration, 21 content. Covers real
+  UDP sockets (including 20% packet loss and a match played to victory), reconnection over real
+  sockets, replay round-trips, the golden corpus, and the content pipeline.
 - Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
   client that forges player ids, orders enemy units, tampers with local state, floods commands,
   replays sequence numbers and sends malformed packets — all with no effect on the world.

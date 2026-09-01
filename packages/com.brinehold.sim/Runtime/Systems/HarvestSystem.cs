@@ -49,7 +49,7 @@ namespace Brinehold.Sim.Systems
             {
                 store.ClearPath(i);
                 world.SetJobIfChanged(i, JobType.Harvesting, store.Position[i], node);
-                store.JobTimer[i] = PrototypeContent.HarvestTicksPerUnit;
+                store.JobTimer[i] = world.Content.HarvestTicksPerUnit;
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace Brinehold.Sim.Systems
             }
 
             if (--store.JobTimer[i] > 0) return;
-            store.JobTimer[i] = PrototypeContent.HarvestTicksPerUnit;
+            store.JobTimer[i] = world.Content.HarvestTicksPerUnit;
 
             int n = node.Index;
             ResourceType resource = store.NodeResource[n];
@@ -98,7 +98,7 @@ namespace Brinehold.Sim.Systems
                 store.Destroy(node);
             }
 
-            int capacity = PrototypeContent.Worker.CarryCapacity;
+            int capacity = world.Content.Unit(EntityKind.Worker).CarryCapacity;
             if (store.CarriedAmount[i] >= capacity) BeginDelivery(world, store, i);
         }
 
@@ -190,7 +190,7 @@ namespace Brinehold.Sim.Systems
                 if (store.Kind[b] != EntityKind.Building) continue;
                 if (store.Owner[b] != owner) continue;
                 if (store.UnderConstruction[b]) continue;
-                if (!PrototypeContent.ForBuilding(store.Building[b]).IsDropOff) continue;
+                if (!world.Content.Building(store.Building[b]).IsDropOff) continue;
 
                 Fix64 sqr = Fix2.SqrDistance(from, store.Position[b]);
                 if (sqr < bestSqr)
