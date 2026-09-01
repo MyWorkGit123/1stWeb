@@ -85,15 +85,21 @@ namespace Brinehold.Net.Client
 
         public int EntityCount => _entities.Count;
 
-        /// <summary>Entities in a stable order, so the renderer and tests see a deterministic list.</summary>
+        /// <summary>
+        /// Entities in a stable order, so the renderer and tests see a deterministic list.
+        ///
+        /// The ordering buffer is local to each enumeration rather than shared. It is tempting to
+        /// reuse one field to avoid the allocation, but the renderer and the input layer both walk
+        /// this list every frame, and one overlapping iteration would silently corrupt the other.
+        /// </summary>
         public IEnumerable<Entity> Entities
         {
             get
             {
-                _order.Clear();
-                foreach (KeyValuePair<uint, Entity> pair in _entities) _order.Add(pair.Key);
-                _order.Sort();
-                for (int i = 0; i < _order.Count; i++) yield return _entities[_order[i]];
+                var order = new List<uint>(_entities.Count);
+                foreach (KeyValuePair<uint, Entity> pair in _entities) order.Add(pair.Key);
+                order.Sort();
+                for (int i = 0; i < order.Count; i++) yield return _entities[order[i]];
             }
         }
 

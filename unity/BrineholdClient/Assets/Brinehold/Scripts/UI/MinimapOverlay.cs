@@ -11,6 +11,11 @@ namespace Brinehold.Unity.Boot
     /// It draws only what the replica knows, which means it inherits the fog guarantee for free:
     /// an enemy the server has not told this client about cannot appear on the minimap, because the
     /// client has no record of it to draw.
+    ///
+    /// Explored terrain is currently read from the server's fog grid directly, which is only
+    /// possible because listen mode has the server in-process. When the client connects to a remote
+    /// server it will maintain its own explored-terrain mask from the replication stream instead;
+    /// the drawing code does not change.
     /// </summary>
     public sealed class MinimapOverlay : MonoBehaviour
     {

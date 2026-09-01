@@ -89,6 +89,12 @@ namespace Brinehold.Unity.Boot
             if (prefab == null) return null;
 
             GameObject instance = Instantiate(prefab, transform);
+
+            // The prefab templates are inactive so they are never drawn or ticked themselves, and a
+            // clone inherits that. Activating here is not optional: without it every newly visible
+            // entity would exist, move and fight while being completely invisible.
+            instance.SetActive(true);
+
             EntityView view = instance.GetComponent<EntityView>();
             if (view == null) view = instance.AddComponent<EntityView>();
             view.Kind = kind;

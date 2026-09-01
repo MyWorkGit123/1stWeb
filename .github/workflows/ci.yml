@@ -29,6 +29,12 @@ jobs:
       - name: Server smoke run
         run: dotnet run --no-build -c Release --project src/Brinehold.Server -- --benchmark --busy --ticks 6000
 
+      # The Unity client cannot be built without an editor, but its scripts can be compiled against
+      # a stub of the UnityEngine API. That catches typos, missing usings, wrong member names on our
+      # own types and signature mismatches — everything except a stub-versus-Unity API difference.
+      - name: Compile the Unity client scripts
+        run: dotnet build tools/unity-compile-check/Brinehold.Unity.CompileCheck.csproj -c Release --nologo
+
       - name: Validate content
         run: dotnet run --no-build -c Release --project src/Brinehold.Tools.ContentCheck -- --compare-default
 

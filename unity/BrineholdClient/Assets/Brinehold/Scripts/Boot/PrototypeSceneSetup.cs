@@ -162,7 +162,10 @@ namespace Brinehold.Unity.Boot
         {
             // Works with both the built-in pipeline and URP: URP's Lit shader is preferred when
             // present, and the built-in Standard shader is the fallback.
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            // Explicit rather than ??: UnityEngine.Object overloads == but the null-coalescing
+            // operator does not use that overload, so ?? on Unity objects is a well-known trap.
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
             var material = new Material(shader);
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", colour);
             if (material.HasProperty("_Color")) material.SetColor("_Color", colour);
@@ -171,7 +174,8 @@ namespace Brinehold.Unity.Boot
 
         private static Material MakeTransparentMaterial()
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Transparent");
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Unlit/Transparent");
             var material = new Material(shader);
             material.SetFloat("_Surface", 1f);           // transparent
             material.renderQueue = 3000;

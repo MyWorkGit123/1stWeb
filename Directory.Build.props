@@ -9,5 +9,16 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <DebugType>portable</DebugType>
     <DotNetCliToolTelemetryOptOut>true</DotNetCliToolTelemetryOptOut>
+
+    <!--
+      Build output goes to artifacts/ rather than beside each project.
+
+      This matters for more than tidiness: the packages/ folders are consumed directly by Unity,
+      and Unity imports everything underneath a package. A bin/ directory holding our own compiled
+      assemblies would be imported as managed plugins while the same types were also compiled from
+      source, producing duplicate-type errors that are very hard to trace back to their cause.
+    -->
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/bin/$(MSBuildProjectName)/</BaseOutputPath>
   </PropertyGroup>
 </Project>

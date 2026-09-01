@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Brinehold.Unity</RootNamespace>
+    <AssemblyName>Brinehold.Unity.CompileCheck</AssemblyName>
+    <!-- Only the Unity scripts. Default globbing would also swallow the stub's own source. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!--
+      Match Unity's own compiler settings rather than the repository's.
+
+      Unity 6 does not enable nullable reference types, and serialized fields are assigned by the
+      editor rather than by a constructor, so nullable diagnostics here would be predicting warnings
+      that the compiler which actually sees this code will never emit. Warnings stay visible; they
+      just do not fail a check whose whole purpose is to predict Unity's verdict.
+    -->
+    <Nullable>disable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!--
+      Compiles the Unity client's scripts against a stub of the UnityEngine API.
+
+      Unity cannot be installed in the environment this project is developed in, so without this the
+      client's MonoBehaviours would ship having never been through a compiler at all. This catches
+      typos, missing usings, wrong member names on our own types, signature mismatches and plain C#
+      errors — everything except a mismatch between the stub and Unity's real API, and runtime
+      behaviour. It is a guard, not a substitute for opening the editor.
+    -->
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../unity/BrineholdClient/Assets/Brinehold/Scripts/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="UnityEngineStub/UnityEngineStub.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.core/Brinehold.Core.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.sim/Brinehold.Sim.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.protocol/Brinehold.Protocol.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.net/Brinehold.Net.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.server/Brinehold.Server.Core.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.client/Brinehold.Client.csproj" />
+  </ItemGroup>
+</Project>

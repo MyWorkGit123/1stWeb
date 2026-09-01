@@ -113,6 +113,18 @@ namespace Brinehold.Unity.Boot
             TickAlpha = Mathf.Clamp01(_tickAccumulator / tickSeconds);
         }
 
+        /// <summary>
+        /// Interpolates the views after everything else has had its Update.
+        ///
+        /// This deliberately does not live in the input controller: doing it there worked only
+        /// because of the order the components happened to be added in, which is exactly the kind of
+        /// dependency that breaks silently the first time somebody reorders a prefab.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (Views != null) Views.Interpolate(TickAlpha);
+        }
+
         private void StepOnce()
         {
             Host.Tick();

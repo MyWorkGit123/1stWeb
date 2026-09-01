@@ -11,5 +11,6 @@
     <ProjectReference Include="../../packages/com.brinehold.sim/Brinehold.Sim.csproj" />
     <ProjectReference Include="../../packages/com.brinehold.protocol/Brinehold.Protocol.csproj" />
     <ProjectReference Include="../../packages/com.brinehold.net/Brinehold.Net.csproj" />
+    <ProjectReference Include="../../packages/com.brinehold.server/Brinehold.Server.Core.csproj" />
   </ItemGroup>
 </Project>

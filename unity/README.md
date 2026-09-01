@@ -6,29 +6,39 @@ the server replicates back (`MULTIPLAYER_ARCHITECTURE.md` §2.3).
 
 ---
 
-## ⚠️ Verification status — read this
+## Verification status — read this
 
-**The C# in `Assets/` has not been compiled or run.** This project was developed in an environment
-with the .NET SDK but no Unity editor, so:
+The C# under `Assets/` **compiles cleanly** against a stub of the UnityEngine API
+(`tools/unity-compile-check`), which runs in CI on every change. It has still **never been opened in
+the Unity editor**.
 
 | Layer | Status |
 |---|---|
-| `packages/com.brinehold.client` (selection, control groups, orders, camera, HUD, placement) | ✅ **Compiled and unit tested** — 38 tests, run against a real server |
-| `unity/BrineholdClient/Assets/**` (MonoBehaviours) | ⚠️ **Written but never compiled.** Expect to fix compile errors on first open |
+| `packages/com.brinehold.client` (selection, control groups, orders, camera, HUD, placement) | ✅ Compiled and unit tested — 38 tests against a real server |
+| `unity/BrineholdClient/Assets/**` (MonoBehaviours) | 🟡 **Compiles against a UnityEngine stub, zero errors and zero warnings.** Never run in the editor |
 
-This split is deliberate. All the *logic* that could be tested without an engine was pushed down
-into `com.brinehold.client`, so the untested surface is only the thin adapter that turns Unity input
-into calls and Unity transforms into positions. Treat the first editor session as a bring-up task,
-not as a finished feature.
+What the stub check catches: typos, missing usings, wrong member names on our own types, signature
+mismatches, and plain C# errors. What it cannot catch: a difference between the stub's signature and
+Unity's real one, component wiring, and anything about runtime behaviour.
 
----
+Five Unity-specific problems were found and fixed by writing that check and reading the code against
+it, none of which a compiler alone would have reported:
 
-## Opening it
+1. **Pooled views were never activated.** Clones of an inactive prefab template are themselves
+   inactive, so every newly visible entity would have existed, moved and fought while being
+   completely invisible.
+2. **The replica's entity enumerator shared one buffer**, so the renderer and the input layer
+   walking it in the same frame could corrupt each other.
+3. **Interpolation ran from the input controller's `Update`**, which only worked because of the
+   order components happened to be added in. It is now `LateUpdate` on the owner.
+4. **`??` was used on `Shader.Find`.** `UnityEngine.Object` overloads `==` but the null-coalescing
+   operator does not use that overload — a well-known trap.
+5. **Build output landed inside `packages/`.** Unity imports everything under a package, so a `bin/`
+   of our own assemblies would have been imported as plugins *and* compiled from source, giving
+   duplicate-type errors that are very hard to trace. Output now goes to `artifacts/`.
 
-1. Install **Unity 6 LTS** (6000.0.x) with **Universal RP**.
-2. Open `unity/BrineholdClient` as a project. The local packages resolve through the `file:`
-   references in `Packages/manifest.json`, which point at `../../packages`.
-3. Unity will import and compile. Fix anything that fails — see the status note above.
+Expect the first editor session to still turn up something. When it does, the errors are worth
+reporting back — most will be one-line fixes.
 
 ## Running the prototype
 

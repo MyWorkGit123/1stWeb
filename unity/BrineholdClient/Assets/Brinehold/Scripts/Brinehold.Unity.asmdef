@@ -6,6 +6,7 @@
     "Brinehold.Sim",
     "Brinehold.Protocol",
     "Brinehold.Net",
+    "Brinehold.Server.Core",
     "Brinehold.Client"
   ],
   "includePlatforms": [],

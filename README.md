@@ -10,7 +10,7 @@ competitive RTS structure — 2 to 8 players, real time, server-authoritative.
 **Status:** 🟢 The prototype **plays a real match across separate processes over UDP** and **records
 replays that reproduce it exactly**, and survives a client dropping and rejoining — **210 tests**
 passing headlessly (`dotnet test`, no Unity needed). Content is data-driven and hash-gated.
-🟡 The **Unity client is written but has never been compiled**. See [`unity/README.md`](unity/README.md).
+🟡 The **Unity client compiles against a UnityEngine stub in CI but has never been opened in the editor**. See [`unity/README.md`](unity/README.md).
 
 ---
 
@@ -62,7 +62,7 @@ tools/      build, CI and developer scripts
 tests/      golden replays, test maps, fixtures
 ```
 
-*`unity/` holds source that has never been compiled; everything else is working, tested code.*
+*`unity/` holds source that compiles but has never run; everything else is working, tested code.*
 
 ---
 
@@ -72,6 +72,7 @@ tests/      golden replays, test maps, fixtures
 dotnet test Brinehold.sln                 # 231 tests: maths, game rules, networking, client, anti-cheat
 tools/ci/verify-replays.sh                # re-simulate the golden replay corpus and check the hashes
 tools/ci/validate-content.sh              # validate the authored balance files
+tools/ci/check-unity-scripts.sh            # compile the Unity scripts against a UnityEngine stub
 tools/dev/run-networked-match.sh          # server + two clients, three processes, real UDP sockets
 tools/dev/benchmark.sh                    # a ten-minute match measured for tick cost and bandwidth
 tools/dev/run-local-match.sh              # a real-time headless match
@@ -103,9 +104,11 @@ all engine-independent and unit tested.
 
 ## What is not verified
 
-The **Unity client** is written but **has never been compiled** — it was built in an environment
-with the .NET SDK and no Unity editor. Expect a bring-up session. The logic it leans on is tested;
-the MonoBehaviour adapter layer is not. See [`unity/README.md`](unity/README.md).
+The **Unity client** compiles cleanly against a stub of the UnityEngine API — a check that runs in
+CI — but **has never been opened in the editor**. That catches typos, missing usings and signature
+mismatches; it cannot catch runtime behaviour or a stub-versus-Unity API difference. Writing that
+check found five real Unity-specific bugs, including pooled views that would have been invisible.
+See [`unity/README.md`](unity/README.md).
 
 Networking: a UDP transport with sequence numbers, a rolling acknowledgement field,
 retransmission, fragmentation and timeouts — verified by a match played between three separate
@@ -128,7 +131,8 @@ population, the full combat and naval rosters, technology, diplomacy, AI).
 
 ## Next step
 
-Bring up the Unity client — it is the only part of the prototype that has never been compiled.
+Open the Unity client in the editor. Everything else about the prototype is built, tested and
+measured; this is the last unverified surface.
 
 ---
 

@@ -46,11 +46,9 @@ namespace Brinehold.Unity.Boot
             HandleControlGroups();
             HandleHotkeys();
 
-            if (Views != null)
-            {
-                Views.Interpolate(Game.TickAlpha);
-                RefreshSelectionRings();
-            }
+            // Interpolation happens in GameBootstrap.LateUpdate, so it does not depend on the order
+            // these components were added in.
+            if (Views != null) RefreshSelectionRings();
         }
 
         // ------------------------------------------------------------------ left mouse
