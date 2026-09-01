@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "com.brinehold.core": "file:../../../packages/com.brinehold.core",
+    "com.brinehold.sim": "file:../../../packages/com.brinehold.sim",
+    "com.brinehold.protocol": "file:../../../packages/com.brinehold.protocol",
+    "com.brinehold.net": "file:../../../packages/com.brinehold.net",
+    "com.brinehold.client": "file:../../../packages/com.brinehold.client",
+    "com.unity.render-pipelines.universal": "17.0.3",
+    "com.unity.inputsystem": "1.11.2",
+    "com.unity.ugui": "2.0.0"
+  }
+}

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Brinehold.Client</RootNamespace>
+    <AssemblyName>Brinehold.Client</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="**/*.cs" />
+    <Compile Include="Runtime/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../com.brinehold.core/Brinehold.Core.csproj" />
+    <ProjectReference Include="../com.brinehold.sim/Brinehold.Sim.csproj" />
+    <ProjectReference Include="../com.brinehold.protocol/Brinehold.Protocol.csproj" />
+    <ProjectReference Include="../com.brinehold.net/Brinehold.Net.csproj" />
+  </ItemGroup>
+</Project>

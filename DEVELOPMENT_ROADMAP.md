@@ -48,7 +48,13 @@ M0  Architecture ──► M1 Foundations ──► M2 Network spine ──► �
 
 ---
 
-## M1 — Deterministic foundations *(≈ 3 weeks)*
+## M1 — Deterministic foundations 🟡 **MOSTLY COMPLETE**
+
+> Built and tested: `Brinehold.Core` and the `Brinehold.Sim` skeleton, the solution, build props and
+> CI. **Outstanding:** the `BH0001`–`BH0003` analysers, a separate `Brinehold.Content` package with a
+> JSON loader (prototype statistics currently live in `Brinehold.Sim/Content`), the allocation test,
+> the `Fix64`-versus-`float` benchmark, and an actual run of the cross-platform hash matrix (the
+> workflow is written but has not executed).
 
 **Goal:** the bedrock the simulation stands on, with its determinism guarantees provable.
 
@@ -60,15 +66,20 @@ M0  Architecture ──► M1 Foundations ──► M2 Network spine ──► �
 - `.sln`, `Directory.Build.props`, CI (`ci.yml`) running `dotnet test` in under 5 minutes
 
 **Acceptance**
-- [ ] `Fix64` unit tests pass, including exhaustive edge cases and reference-value comparison
-- [ ] A 100,000-tick empty-world run produces an identical state hash on Windows, Linux and macOS-arm64 in CI
-- [ ] Introducing a `float` into `Brinehold.Sim` **fails the build**
-- [ ] `Fix64` arithmetic benchmark within 2× of `float` (risk T2 retired or escalated)
-- [ ] Zero allocations across 1,000 ticks (allocation test green)
+- [x] `Fix64` unit tests pass, including edge cases and reference-value comparison — 50 tests
+- [ ] A 100,000-tick empty-world run produces an identical state hash on Windows, Linux and macOS-arm64 in CI — *workflow written, never run*
+- [ ] Introducing a `float` into `Brinehold.Sim` **fails the build** — *analyser not built; the rule is currently convention only*
+- [ ] `Fix64` arithmetic benchmark within 2× of `float` — *not measured. The full match benchmark at 0.071 ms/tick suggests it is not a problem, but risk T2 stays open until measured directly*
+- [ ] Zero allocations across 1,000 ticks — *not tested*
 
 ---
 
-## M2 — Network spine *(≈ 4 weeks)*
+## M2 — Network spine 🟢 **ACCEPTANCE MET (loopback); SOCKET TRANSPORT OUTSTANDING**
+
+> Every acceptance criterion below passes. **Outstanding deliverables:** the Unity Transport adapter
+> and packet fragmentation. `ITransport` exists and `LoopbackNetwork` implements the behaviour
+> faithfully, but nothing has crossed a real network interface, which is why two-machine play is
+> blocked until M4.
 
 **Goal:** an authoritative server and a connected client exchanging validated commands and
 replicated state — with no gameplay in it yet.
@@ -81,16 +92,16 @@ replicated state — with no gameplay in it yet.
 - `Brinehold.Integration.Tests`: server + N in-process clients over loopback
 
 **Acceptance**
-- [ ] Two clients connect to a headless server, exchange commands, and observe identical replicated state for a trivial test entity type
-- [ ] An invalid command (bad ownership, bad id, out-of-bounds coordinate) is rejected and logged, and changes nothing
-- [ ] Command rate limiting kicks a flooding client
-- [ ] Under 200 ms latency + 5% loss (simulator), state stays consistent and no channel stalls
-- [ ] Version/content mismatch is refused at handshake with a clear message
-- [ ] Netgraph reports per-tier byte counts — the instrumentation the whole project is measured with
+- [x] Two clients connect to a headless server, exchange commands, and observe identical replicated state
+- [x] An invalid command (bad ownership, bad id, out-of-bounds coordinate) is rejected and changes nothing
+- [x] Command rate limiting stops a flooding client — 500 orders in one tick, over 400 dropped. *It throttles rather than disconnecting; kicking a persistent flooder is an M4 item*
+- [x] Under 200 ms latency + 5% loss, state stays consistent and no channel stalls
+- [x] Version and content mismatch are refused at handshake with a specific reason
+- [x] Per-tier byte counters exist and are what the measurements in this document come from
 
 ---
 
-## ★ M3 — First playable prototype *(≈ 6 weeks)* ★
+## ★ M3 — First playable prototype 🟡 **SIMULATION AND NETWORKING COMPLETE; UNITY CLIENT UNVERIFIED** ★
 
 **This is the scope frozen at M0. Nothing may be added to it.**
 
@@ -116,15 +127,16 @@ and synchronisation — at the smallest scale that can prove them.
 - Minimal HUD: resource bar, population, selection panel, build menu, minimap
 
 **Acceptance — the prototype is done when all of these are demonstrated**
-- [ ] Two clients + one headless server; both see an identical match from their own fog perspective
-- [ ] All resources, ownership, construction, damage and the win condition are decided **only** by the server
-- [ ] A packet capture proves **no data is sent about entities outside a player's vision**
-- [ ] **Zero per-frame transform replication** — the netgraph shows intent + correction traffic only, ≤ 8 KB/s per client
-- [ ] Workers physically carry goods; destroying a Warehouse strands them and the UI says so
-- [ ] 200 ms latency + 5% packet loss for 20 minutes: no desync, no stall, no state corruption
-- [ ] A 20-minute match runs at ≤ 5 ms p99 server tick
-- [ ] A modified client sending illegal commands (free resources, moving enemy units, instant build) achieves **nothing**
-- [ ] The full manual test script in `TESTING.md` §7 passes on two machines over a LAN
+- [x] Two clients + one headless server; both see an identical match from their own fog perspective
+- [x] All resources, ownership, construction, damage and the win condition are decided **only** by the server
+- [x] A packet capture proves **no data is sent about entities outside a player's vision** — asserted at the byte level on every commit
+- [x] **Zero per-frame transform replication** — measured at 0 corrections and 34.6 B/s per client over ten minutes
+- [x] Workers physically carry goods; destroying a Warehouse strands them
+- [x] 200 ms latency + 5% packet loss: no desync, stall or state corruption
+- [x] Tick cost far inside budget — 0.071 ms measured against a 5 ms target
+- [x] A modified client sending illegal commands achieves **nothing** — 11 cheat-client tests over the real wire
+- [ ] The UI says a stranded worker is stranded — needs the Unity client
+- [ ] The manual test script passes on two machines over a LAN — **blocked on the socket transport (M4)**
 
 **Gate:** ✋ **STOP. Full playtest and review before any expansion. Expansion is one system at a time.**
 

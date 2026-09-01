@@ -1,0 +1,8 @@
+{
+  "name": "com.brinehold.client",
+  "version": "0.1.0",
+  "displayName": "Brinehold Client Logic",
+  "description": "Selection, control groups, order issuing, camera and HUD models. Engine-independent so it can be unit tested without opening Unity.",
+  "unity": "6000.0",
+  "dependencies": { "com.brinehold.core": "0.1.0", "com.brinehold.sim": "0.1.0", "com.brinehold.net": "0.1.0" }
+}

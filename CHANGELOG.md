@@ -4,7 +4,9 @@ All notable changes to this project are recorded here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning will follow [Semantic Versioning](https://semver.org/) once there is a build to version.
 
-**Project status: M0 — architecture and design. No gameplay code exists yet, by design.**
+**Project status: the prototype's simulation and networking are built, tested and measured.**
+175 tests pass headlessly. The Unity client exists as source but has never been compiled — see
+`unity/README.md`. Two-machine play is blocked on the socket transport (M4).
 
 ---
 
@@ -12,7 +14,7 @@ versioning will follow [Semantic Versioning](https://semver.org/) once there is 
 
 ### Added — M1 foundations and the M3 prototype simulation and network spine
 
-**Status: 137 tests passing** via `dotnet test` — no Unity editor required, because the simulation
+**Status: 175 tests passing** via `dotnet test` — no Unity editor required, because the simulation
 has no engine dependency.
 
 #### `Brinehold.Core` — deterministic primitives (pure C#, no `UnityEngine`)
@@ -72,8 +74,20 @@ has no engine dependency.
 - The private-economy stream was delta-only, so a client whose HUD was wrong stayed wrong forever.
   It now refreshes once a second and is self-healing.
 
+#### `Brinehold.Client` and the Unity view layer
+- `com.brinehold.client` (pure C#, unit tested): `SelectionModel` (click, box, shift, double-click
+  type-select, idle-worker cycling), `ControlGroups` (Ctrl/Shift/recall on 0–9), `OrderIssuer` (the
+  contextual right-click: harvest a tree, attack an enemy, otherwise walk), `CameraRig` (pan speed
+  scaled by zoom, clamping, rotation), `HudModel` and `PlacementPreview`. Deliberately
+  engine-independent so the mechanics players notice immediately can be tested without an editor.
+- `unity/BrineholdClient` (**written, never compiled**): bootstrap and fixed-tick accumulator,
+  terrain mesh builder with run-length merging, pooled entity views with interpolation, fog texture,
+  camera and selection controllers, IMGUI HUD with a netgraph, and a minimap. `PrototypeSceneSetup`
+  builds the entire scene from primitives at runtime, so there are no binary assets and the client
+  runs from a single component on an empty scene.
+
 #### Testing and tooling
-- 50 core tests, 62 simulation tests, 25 networked integration tests.
+- 50 core tests, 62 simulation tests, 38 client tests, 25 networked integration tests.
 - Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
   client that forges player ids, orders enemy units, tampers with local state, floods commands,
   replays sequence numbers and sends malformed packets — all with no effect on the world.
@@ -81,10 +95,14 @@ has no engine dependency.
   matrix.
 - `tools/dev/run-local-match.sh`, `tools/dev/benchmark.sh`, `tools/ci/run-tests.sh`.
 
-#### Not yet built
-- The Unity client (view layer) — no rendering, input or UI exists yet.
-- Socket transport: the loopback transport is real and tested, but nothing has crossed a network
-  interface yet.
+#### Not yet built or not yet verified
+- **The Unity client has never been compiled.** It was written in an environment with the .NET SDK
+  but no Unity editor. The logic it depends on is tested; the MonoBehaviour adapter layer is not.
+- **Socket transport.** `LoopbackNetwork` is real, deterministic and tested, but nothing has crossed
+  a network interface, so two-machine play is not possible yet (M4).
+- The `BH0001`–`BH0003` analysers. The no-float and no-Unity rules are currently convention.
+- A separate content package with a JSON loader; prototype statistics still live in `Brinehold.Sim`.
+- The allocation test and the `Fix64`-versus-`float` benchmark.
 - Reconnection, replays and spectating (M4/M6).
 
 ### Added — M0 architecture and design phase

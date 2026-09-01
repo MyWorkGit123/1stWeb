@@ -131,48 +131,59 @@ for os      in { ubuntu-x64, windows-x64, macos-arm64 }:
 This is the script the prototype gate is judged against. It must pass on **two physical machines over
 a LAN**, not only on one machine.
 
-### 7.1 Setup
+### 7.1 What can be tested today
+
+| Route | Status |
+|---|---|
+| **Headless, automated** — `dotnet test Brinehold.sln` | ✅ 175 tests. Covers everything in 7.2 except the human-in-the-loop steps |
+| **Headless, measured** — `tools/dev/benchmark.sh` | ✅ Tick cost, per-tier bandwidth, state hash |
+| **Unity, one machine, listen mode** | ⚠️ Written, never compiled — see `unity/README.md` |
+| **Two machines over a LAN** | ❌ Blocked on the socket transport (M4). `LoopbackNetwork` is in-process only |
 
 ```bash
-# Terminal 1 — authoritative server
-dotnet run --project src/Brinehold.Server -- \
-    --map tests/maps/prototype_twin_coves \
-    --players 2 --port 7777 --log-level info
+# The automated equivalent of most of the checklist below
+dotnet test Brinehold.sln
 
-# Machine A and Machine B — clients
-BrineholdClient.exe --connect <server-ip>:7777 --name PlayerA
-BrineholdClient.exe --connect <server-ip>:7777 --name PlayerB
+# A ten-minute match, measured
+tools/dev/benchmark.sh 12000
+
+# A real-time headless match, printing a state hash every ten seconds
+tools/dev/run-local-match.sh
 ```
 
-Local single-machine alternative: `tools/dev/run-two-clients.sh` (launches the server in listen mode
-plus two client windows).
+To run the Unity client: open `unity/BrineholdClient`, add `PrototypeSceneSetup` to an empty scene,
+press Play. Full instructions and its verification status are in `unity/README.md`.
 
 ### 7.2 Checklist
 
-| # | Step | Expected |
-|---|---|---|
-| 1 | Both clients connect | Both see the lobby, then the match starts together |
-| 2 | Each player has 10 workers, a Warehouse, and a separate starting area | Correct counts and ownership on both screens |
-| 3 | Pan, edge-scroll, zoom, rotate the camera | Smooth, no clipping through terrain |
-| 4 | Click a worker; drag-select several; shift-click to add | Selection ring and panel update; counts correct |
-| 5 | Right-click ground | Workers path there, avoid obstacles, arrive |
-| 6 | Right-click a forest | Workers harvest Wood, carry it visibly, deposit it at the Warehouse, repeat |
-| 7 | Watch the resource bar | Wood rises only when a worker actually deposits, never during carrying |
-| 8 | Place a House | Ghost shows legal/illegal placement; site appears; workers deliver materials; building completes; population cap rises |
-| 9 | Try to place a building on water / on the enemy's area | Rejected with a visible reason; no resources deducted |
-| 10 | Build a Dock, then a Cutter | Ship appears in water and is controllable |
-| 11 | Train a Cutthroat | Trains only if resources and population allow; appears at the building |
-| 12 | Move a Cutthroat into fog | The other player does **not** see it until it enters their vision |
-| 13 | **On Player B's client, look at Player A's base** | Only explored terrain and last-seen buildings — **no live units, no resource numbers** |
-| 14 | Attack a worker with a Cutthroat | Damage and death resolve identically on both screens |
-| 15 | Attack a building | It takes damage, shows damage state, and can be destroyed |
-| 16 | Destroy the enemy Warehouse | Match ends; **both** clients show the correct win/loss |
-| 17 | Open the netgraph overlay (F3) during play | Per-tier bytes shown; **no per-frame transform traffic**; total ≤ 8 KB/s per client |
-| 18 | Re-run the whole script with `--netsim 200ms,5%` | Identical outcomes; no desync, no stall, no rubber-banding beyond the correction threshold |
-| 19 | Kill a client process mid-match and restart it | *(M6 requirement; M3 stretch)* Reconnects and resumes with correct state |
-| 20 | Run the cheat client (`--cheat-mode`) | Requests free resources, moves enemy units, instant-builds — **all rejected, world unchanged, attempts logged server-side** |
+Each row names the automated test that covers it, where one exists. A row with no test is a
+human-in-the-loop check that needs the Unity client.
 
-**The prototype passes only when items 1–18 and 20 pass on two machines.**
+| # | Step | Expected | Automated by |
+|---|---|---|---|
+| 1 | Two clients connect | Both see the same match start together | `MatchHarness` (all integration tests) |
+| 2 | Each player has 10 workers, a warehouse, a separate starting area | Correct counts and ownership | `BothPlayersStartWithTenWorkersAndACore`, `StartingAreasAreSeparated` |
+| 3 | Camera pan, edge-scroll, zoom, rotate | Smooth, clamped to the map | `CameraTests` (model only; feel needs Unity) |
+| 4 | Click, drag-select, shift-click | Selection and counts correct | `SelectionTests` |
+| 5 | Right-click ground | Units path there and arrive | `RightClickingGroundIsAMoveOrder`, `OrdersIssuedByTheClientAreExecutedByTheServer` |
+| 6 | Right-click a forest | Workers harvest, carry, deposit, repeat | `WorkerHarvestsWoodAndDeliversItToTheWarehouse`, `WorkerKeepsCyclingAndDeliversRepeatedly` |
+| 7 | Watch the resource bar | Rises only on deposit, never while carrying | `ResourcesOnlyRiseOnDepositNotWhileCarrying` |
+| 8 | Place a house | Ghost shows legality; site appears; workers build it; population cap rises | `PlacingAHouseDeductsResourcesAndCreatesASite`, `WorkersCompleteTheHouseAndRaiseThePopulationCap` |
+| 9 | Place on water or on a building | Rejected with a reason; no resources spent | `PlacingOnWaterIsRejectedAndCostsNothing`, `TheGhostRefusesWaterAndSaysWhy` |
+| 10 | Build a dock, then a cutter | Ship appears in water and is controllable | `ADockBuildsAShipThatFloats` |
+| 11 | Train a soldier | Trains only if resources and population allow | `TrainingAWorkerDeductsFoodAndSpawnsAfterTheTimer`, `TrainingIsBlockedByThePopulationCap` |
+| 12 | Move a unit into fog | The opponent does not see it | `NoPacketEverMentionsAnUnseenEnemyUnit` |
+| 13 | Look at the opponent's base | No live units, no resource numbers | `AClientNeverLearnsTheEnemyStartingArmyExists`, `PrivateEconomyIsNeverSentToTheOtherPlayer` |
+| 14 | Attack a worker | Damage and death resolve identically for both | `ASoldierKillsAnEnemyWorker`, `BothClientsAgreeAboutAnEntityTheyCanBothSee` |
+| 15 | Attack a building | Takes damage and can be destroyed | `BuildingsCanBeDestroyedBySoldiers` |
+| 16 | Destroy the enemy warehouse | Match ends; both clients shown the right result | `DestroyingTheEnemyCoreEndsTheMatchForBothClients` |
+| 17 | Netgraph (F3) | No per-frame transform traffic; within budget | `MovementCostsIntentsNotAStreamOfTransforms`, `ABusyMatchStaysInsideTheBandwidthBudget`, `AFullHarvestCycleNeedsAlmostNoCorrections` |
+| 18 | 200 ms latency, 5% loss | No desync, stall or corruption | `AMatchRunsCorrectlyUnder200MillisecondsOfLatencyAndFivePercentLoss` |
+| 19 | Kill and restart a client | Reconnects and resumes | ❌ Not built (M6) |
+| 20 | Cheat client | Every illegal request refused, world unchanged | `AuthorityOverTheWireTests` (11 tests) |
+
+**Measured on the current build** (2 players, 10 workers each, 10 minutes, Release, one core):
+0.071 ms per tick · 34.6 B/s per client · 0 corrections · idle traffic ~25 B/s.
 
 ### 7.3 Cheat client
 

@@ -7,7 +7,10 @@ physical production chains and vertical cliffside logistics, wrapped in Age-of-E
 competitive RTS structure — 2 to 8 players, real time, server-authoritative.
 
 **Engine:** Unity 6 LTS · C#
-**Status:** 🟡 **M0 — architecture and design.** No gameplay code exists yet, deliberately.
+**Status:** 🟢 The prototype's **simulation, server and networking are built, tested and measured** —
+**175 tests** pass headlessly (`dotnet test`, no Unity needed).
+🟡 The **Unity client is written but has never been compiled**, and two-machine play awaits the
+socket transport. See [`unity/README.md`](unity/README.md).
 
 ---
 
@@ -59,14 +62,48 @@ tools/      build, CI and developer scripts
 tests/      golden replays, test maps, fixtures
 ```
 
-*The directories are scaffolded but empty — see each area's `README.md`.*
+*`unity/` is still a scaffold; everything else contains working, tested code.*
 
 ---
 
+## Try it
+
+```bash
+dotnet test Brinehold.sln                 # 175 tests: maths, game rules, networking, client, anti-cheat
+tools/dev/benchmark.sh                    # a ten-minute match measured for tick cost and bandwidth
+tools/dev/run-local-match.sh              # a real-time headless match
+```
+
+Measured on one core, two players, ten minutes of match time:
+**0.071 ms per tick** (705× real time), **34.6 B/s per client**, **0 position corrections**.
+
+## What works today
+
+Server-authoritative match loop at 20 Hz · deterministic fixed-point simulation · workers that
+physically harvest, haul and build · construction and unit training · combat and a win condition ·
+deterministic A* pathfinding on land and water · per-player fog of war enforced at the replication
+boundary · intent-based replication · command validation and anti-cheat · a cheat-client test
+harness that proves the authority model.
+
+Client-side: selection (click, box, shift, double-click), ten control groups, contextual
+right-click orders, a camera model and a build-placement preview that agrees with the server —
+all engine-independent and unit tested.
+
+## What is not verified
+
+The **Unity client** is written but **has never been compiled** — it was built in an environment
+with the .NET SDK and no Unity editor. Expect a bring-up session. The logic it leans on is tested;
+the MonoBehaviour adapter layer is not. See [`unity/README.md`](unity/README.md).
+
+## What does not exist yet
+
+**Socket transport** — `LoopbackNetwork` is real and tested but in-process, so two machines cannot
+play each other yet. Also outstanding: the no-float and no-Unity analysers, a JSON content package,
+reconnection, replays and spectating (M4–M6).
+
 ## Next step
 
-Implementation is **paused at the M0 gate** pending review and sign-off of the ten architecture
-decisions in [`MULTIPLAYER_ARCHITECTURE.md` §14](MULTIPLAYER_ARCHITECTURE.md).
+The socket transport, so the two-client match that already runs in tests can run across a network.
 
 ---
 
