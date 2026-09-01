@@ -43,14 +43,15 @@ namespace Brinehold.Net.Client
         /// Introduces this client to the server. The reply is a Welcome carrying either an accepted
         /// player slot or the reason the build was refused; the replica applies it when it arrives.
         /// </summary>
-        public void SendHello(ulong contentHash, string playerName)
+        public void SendHello(ulong contentHash, string playerName, ulong reconnectToken = 0)
         {
             _writer.Reset();
             MessageCodec.Write(_writer, new Brinehold.Protocol.HelloMessage
             {
                 ProtocolVersion = Brinehold.Protocol.ProtocolVersion.Current,
                 ContentHash = contentHash,
-                PlayerName = playerName ?? string.Empty
+                PlayerName = playerName ?? string.Empty,
+                ReconnectToken = reconnectToken
             });
             _transport.Send(_writer.AsSegment(), Channel.ReliableOrdered);
         }

@@ -8,7 +8,8 @@ competitive RTS structure — 2 to 8 players, real time, server-authoritative.
 
 **Engine:** Unity 6 LTS · C#
 **Status:** 🟢 The prototype **plays a real match across separate processes over UDP** and **records
-replays that reproduce it exactly** — **199 tests** passing headlessly (`dotnet test`, no Unity needed).
+replays that reproduce it exactly**, and survives a client dropping and rejoining — **210 tests**
+passing headlessly (`dotnet test`, no Unity needed).
 🟡 The **Unity client is written but has never been compiled**. See [`unity/README.md`](unity/README.md).
 
 ---
@@ -68,7 +69,7 @@ tests/      golden replays, test maps, fixtures
 ## Try it
 
 ```bash
-dotnet test Brinehold.sln                 # 199 tests: maths, game rules, networking, client, anti-cheat
+dotnet test Brinehold.sln                 # 210 tests: maths, game rules, networking, client, anti-cheat
 tools/ci/verify-replays.sh                # re-simulate the golden replay corpus and check the hashes
 tools/dev/run-networked-match.sh          # server + two clients, three processes, real UDP sockets
 tools/dev/benchmark.sh                    # a ten-minute match measured for tick cost and bandwidth
@@ -113,9 +114,12 @@ Replays: every match is recorded as its command stream and reproduces exactly on
 ten-minute match is 953 bytes. `ReplayCheck` verifies the corpus, and CI runs it on Linux, Windows
 and macOS-arm64.
 
+Reconnection: a dropped player keeps their slot for a grace window while their settlement keeps
+running, and rejoins with a token that a stranger cannot forge.
+
 ## What does not exist yet
 
-The no-float and no-Unity analysers, a JSON content package, reconnection and spectating (M6), and every system beyond the prototype's scope (production chains, vertical building,
+A JSON content package, spectating (M6), and every system beyond the prototype's scope (production chains, vertical building,
 population, the full combat and naval rosters, technology, diplomacy, AI).
 
 ## Next step

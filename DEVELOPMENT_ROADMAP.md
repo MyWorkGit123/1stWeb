@@ -147,7 +147,12 @@ and synchronisation — at the smallest scale that can prove them.
 
 ---
 
-## M4 — Hardening and confidence *(≈ 3 weeks)*
+## M4 — Hardening and confidence 🟢 **MOSTLY COMPLETE**
+
+> Done: replay recording and playback, `ReplayCheck`, the golden corpus, and the three-platform
+> determinism workflow. **Outstanding:** the workflow has not yet been observed running on GitHub,
+> world snapshots for server-crash recovery, a dedicated load-test harness (`TestClient` is the
+> seed), and structured logging and metrics.
 
 **Goal:** make the prototype's guarantees permanent and machine-checked.
 
@@ -178,14 +183,20 @@ run the prototype without touching the mouse for orders they have hotkeys for.
 
 ---
 
-## M6 — Reconnection, spectators, replays *(≈ 3 weeks)*
+## M6 — Reconnection, spectators, replays 🟡 **RECONNECTION AND REPLAYS DONE; SPECTATORS OUTSTANDING**
 
 Full reconnection flow (snapshot + fast-forward, ≤ 15 s), disconnect grace window and AI takeover,
 spectator sessions with the delayed-observer mode, the replay viewer UI (scrub, speed, fog toggle,
 analysis overlays).
 
-**Acceptance:** a client killed at a random tick reconnects and resumes with correct state, twenty
-times out of twenty, including mid-combat and mid-construction.
+**Acceptance**
+- [x] A client killed mid-match reconnects over real sockets and resumes with correct state
+- [x] The match keeps running while the player is away, and their economy is intact on return
+- [x] A forged or unknown token is refused; a stranger cannot take a disconnected player's slot
+- [x] An expired grace window resigns the player
+- [ ] Verified across twenty randomised drop points, including mid-combat and mid-construction
+- [ ] Spectator sessions with the delayed-observer mode
+- [ ] The replay viewer UI (scrub, speed, fog toggle) — needs the Unity client
 
 ---
 

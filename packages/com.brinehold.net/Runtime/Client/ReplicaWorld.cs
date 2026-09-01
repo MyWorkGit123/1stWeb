@@ -56,6 +56,15 @@ namespace Brinehold.Net.Client
 
         /// <summary>The server's handshake verdict, so a refused client can explain itself.</summary>
         public HandshakeResult Handshake { get; private set; } = HandshakeResult.Accepted;
+
+        /// <summary>
+        /// The secret to present if this client has to rejoin. Held, never displayed: anyone with it
+        /// could reclaim this player's slot.
+        /// </summary>
+        public ulong ReconnectToken { get; private set; }
+
+        /// <summary>True when the last Welcome restored an existing slot rather than granting a new one.</summary>
+        public bool Reconnected { get; private set; }
         public uint Tick { get; private set; }
         public bool MatchOver { get; private set; }
         public bool LocalPlayerWon { get; private set; }
@@ -89,6 +98,20 @@ namespace Brinehold.Net.Client
         }
 
         public bool TryGet(EntityId id, out Entity entity) => _entities.TryGetValue(id.Raw, out entity!);
+
+        /// <summary>
+        /// Drops every entity this replica held. Called on a reconnect, because the server has
+        /// likewise forgotten what we knew and is about to re-send our whole visible world — keeping
+        /// the old contents would leave ghosts of anything that died while we were away.
+        /// </summary>
+        public void ForgetEverything()
+        {
+            foreach (KeyValuePair<uint, Entity> pair in _entities)
+                if (pair.Value.Kind == EntityKind.Building) SetBuildingFootprint(pair.Value, false);
+
+            _entities.Clear();
+            RecentEvents.Clear();
+        }
 
         public bool Knows(EntityId id) => _entities.ContainsKey(id.Raw);
 
@@ -151,6 +174,9 @@ namespace Brinehold.Net.Client
                         {
                             LocalPlayer = welcome.PlayerId;
                             Welcomed = true;
+                            ReconnectToken = welcome.ReconnectToken;
+                            Reconnected = welcome.Reconnected;
+                            if (welcome.Reconnected) ForgetEverything();
                         }
                         break;
 

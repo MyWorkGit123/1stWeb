@@ -38,15 +38,43 @@ namespace Brinehold.Server
             public int Tokens = MaxCommandsPerSecond * 100;
             public int DroppedForRateLimit;
             public int DroppedForReplay;
+
+            /// <summary>The secret this client presents to reclaim its slot after a drop.</summary>
+            public ulong ReconnectToken;
+
+            /// <summary>Tick the connection was lost on, or zero while connected.</summary>
+            public uint DroppedAtTick;
+            public bool IsDropped => DroppedAtTick != 0;
         }
 
         private readonly IServerTransport _transport;
         private readonly List<Session> _sessions = new List<Session>();
         private readonly BitWriter _scratch = new BitWriter(2048);
         private readonly List<int> _awaitingHello = new List<int>();
+        private readonly List<Session> _dropped = new List<Session>();
+        private readonly Brinehold.Core.Random.DeterministicRandom _tokens =
+            new Brinehold.Core.Random.DeterministicRandom((ulong)System.DateTime.UtcNow.Ticks);
 
-        /// <summary>Players whose connection has dropped. The disconnect grace flow lands in M6.</summary>
-        public readonly List<byte> Disconnected = new List<byte>();
+        /// <summary>
+        /// How long a dropped player keeps their slot. Their settlement keeps running while they are
+        /// away: buildings produce, standing orders continue, and an opponent can attack them. This
+        /// is deliberate — a disconnect must not be a free pause.
+        /// </summary>
+        public uint DisconnectGraceTicks = 180 * SimConstants.TicksPerSecond;
+
+        /// <summary>Players currently disconnected but still inside their grace window.</summary>
+        public IReadOnlyList<byte> AwaitingReconnect
+        {
+            get
+            {
+                var result = new List<byte>();
+                for (int i = 0; i < _dropped.Count; i++) result.Add(_dropped[i].PlayerId);
+                return result;
+            }
+        }
+
+        /// <summary>Players whose grace window expired and who were resigned.</summary>
+        public readonly List<byte> Resigned = new List<byte>();
 
         public readonly SimWorld World;
         public readonly ReplicationServer Replication;
@@ -77,6 +105,10 @@ namespace Brinehold.Server
 
         /// <summary>Registers a connection and assigns it a player slot.</summary>
         public bool TryConnect(int connectionId, string name, ushort protocolVersion, ulong contentHash, out WelcomeMessage welcome)
+            => TryConnect(connectionId, name, protocolVersion, contentHash, 0, out welcome);
+
+        public bool TryConnect(int connectionId, string name, ushort protocolVersion, ulong contentHash,
+                               ulong reconnectToken, out WelcomeMessage welcome)
         {
             welcome = new WelcomeMessage
             {
@@ -104,7 +136,35 @@ namespace Brinehold.Server
                 return false;
             }
 
-            if (_sessions.Count >= Config.PlayerCount)
+            // A client presenting a token is trying to reclaim a slot it already held.
+            if (reconnectToken != 0)
+            {
+                Session? restored = TakeDroppedSession(reconnectToken);
+                if (restored == null)
+                {
+                    welcome.Result = HandshakeResult.UnknownReconnectToken;
+                    SendWelcome(connectionId, welcome);
+                    return false;
+                }
+
+                restored.ConnectionId = connectionId;
+                restored.DroppedAtTick = 0;
+                _sessions.Add(restored);
+
+                // Forget what this client was believed to know, so the next packet rebuilds their
+                // whole visible world and their economy from scratch.
+                Replication.ResetPlayerView(restored.PlayerId);
+
+                welcome.Result = HandshakeResult.Accepted;
+                welcome.PlayerId = restored.PlayerId;
+                welcome.ReconnectToken = restored.ReconnectToken;
+                welcome.Reconnected = true;
+                welcome.Tick = World.Tick;
+                SendWelcome(connectionId, welcome);
+                return true;
+            }
+
+            if (_sessions.Count + _dropped.Count >= Config.PlayerCount)
             {
                 welcome.Result = HandshakeResult.MatchFull;
                 SendWelcome(connectionId, welcome);
@@ -114,16 +174,37 @@ namespace Brinehold.Server
             var session = new Session
             {
                 ConnectionId = connectionId,
-                PlayerId = (byte)_sessions.Count,
+                PlayerId = (byte)(_sessions.Count + _dropped.Count),
                 Handshaken = true,
-                Name = name
+                Name = name,
+                ReconnectToken = NextToken()
             };
             _sessions.Add(session);
 
             welcome.Result = HandshakeResult.Accepted;
             welcome.PlayerId = session.PlayerId;
+            welcome.ReconnectToken = session.ReconnectToken;
+            welcome.Tick = World.Tick;
             SendWelcome(connectionId, welcome);
             return true;
+        }
+
+        private ulong NextToken()
+        {
+            ulong token = _tokens.NextULong();
+            return token == 0 ? 1 : token;   // zero means "no token"
+        }
+
+        private Session? TakeDroppedSession(ulong token)
+        {
+            for (int i = 0; i < _dropped.Count; i++)
+            {
+                if (_dropped[i].ReconnectToken != token) continue;
+                Session session = _dropped[i];
+                _dropped.RemoveAt(i);
+                return session;
+            }
+            return null;
         }
 
         private void SendWelcome(int connectionId, WelcomeMessage welcome)
@@ -137,12 +218,16 @@ namespace Brinehold.Server
 
         public bool AllPlayersConnected => _sessions.Count >= Config.PlayerCount;
 
+        /// <summary>Slots that have been claimed, whether or not the player is currently connected.</summary>
+        public int ClaimedSlots => _sessions.Count + _dropped.Count;
+
         /// <summary>Advances the match by exactly one simulation tick.</summary>
         public void Tick()
         {
             _transport.Poll();
             AcceptPendingConnections();
             RemoveLostConnections();
+            ExpireReconnectWindows();
             RefillRateLimiters();
             DrainClientPackets();
 
@@ -181,10 +266,34 @@ namespace Brinehold.Server
                 for (int i = 0; i < _sessions.Count; i++)
                 {
                     if (_sessions[i].ConnectionId != connectionId) continue;
-                    Disconnected.Add(_sessions[i].PlayerId);
+
+                    // The player keeps their slot, and their settlement keeps running, until the
+                    // grace window expires. Losing your connection should cost you the time you
+                    // were away, not the match outright — and it must not pause anyone else.
+                    Session session = _sessions[i];
+                    session.DroppedAtTick = World.Tick == 0 ? 1 : World.Tick;
                     _sessions.RemoveAt(i);
+                    _dropped.Add(session);
                     break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Resigns anyone whose grace window has run out. Handing the settlement to an AI instead is
+        /// a lobby setting in M14, once there is an AI to hand it to.
+        /// </summary>
+        private void ExpireReconnectWindows()
+        {
+            for (int i = _dropped.Count - 1; i >= 0; i--)
+            {
+                Session session = _dropped[i];
+                if (World.Tick - session.DroppedAtTick < DisconnectGraceTicks) continue;
+
+                _dropped.RemoveAt(i);
+                Resigned.Add(session.PlayerId);
+                if (session.PlayerId < World.Players.Length)
+                    World.Players[session.PlayerId].Defeated = true;
             }
         }
 
@@ -277,7 +386,7 @@ namespace Brinehold.Server
             _awaitingHello.Remove(connectionId);
 
             string name = string.IsNullOrEmpty(hello.PlayerName) ? $"Player {_sessions.Count + 1}" : hello.PlayerName;
-            TryConnect(connectionId, name, hello.ProtocolVersion, hello.ContentHash, out _);
+            TryConnect(connectionId, name, hello.ProtocolVersion, hello.ContentHash, hello.ReconnectToken, out _);
         }
 
         private void HandleCommand(Session session, BitReader reader)

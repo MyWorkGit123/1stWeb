@@ -46,7 +46,11 @@ namespace Brinehold.Protocol
         ProtocolMismatch = 1,
         ContentMismatch = 2,
         MatchFull = 3,
-        MatchAlreadyStarted = 4
+        MatchAlreadyStarted = 4,
+        /// <summary>The token presented does not match any slot awaiting a reconnection.</summary>
+        UnknownReconnectToken = 5,
+        /// <summary>The grace window expired and the slot was resigned.</summary>
+        ReconnectWindowExpired = 6
     }
 
     // ---------------------------------------------------------------- client to server
@@ -56,6 +60,13 @@ namespace Brinehold.Protocol
         public ushort ProtocolVersion;
         public ulong ContentHash;
         public string PlayerName;
+
+        /// <summary>
+        /// Zero for a fresh join. On a reconnect the client presents the token it was given when it
+        /// first joined, which is how the server knows to hand back the same player slot rather than
+        /// treating it as a new arrival — and how it knows a stranger cannot claim someone's slot.
+        /// </summary>
+        public ulong ReconnectToken;
     }
 
     public struct PingMessage
@@ -74,6 +85,15 @@ namespace Brinehold.Protocol
         public ushort MapHeight;
         public ulong Seed;
         public ulong ContentHash;
+
+        /// <summary>The secret this client presents if it has to reconnect. Kept, never displayed.</summary>
+        public ulong ReconnectToken;
+
+        /// <summary>True when this Welcome restored an existing slot rather than granting a new one.</summary>
+        public bool Reconnected;
+
+        /// <summary>The tick the match is on, so a rejoining client can resynchronise its clock.</summary>
+        public uint Tick;
     }
 
     public struct TickHeaderMessage

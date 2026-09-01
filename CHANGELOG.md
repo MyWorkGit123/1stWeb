@@ -5,7 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning will follow [Semantic Versioning](https://semver.org/) once there is a build to version.
 
 **Project status: the prototype plays a real match across separate processes over UDP, and records
-replays that reproduce it exactly.** 199 tests pass headlessly. The Unity client exists as source but has never been compiled — see
+replays that reproduce it exactly, and survives a client disconnecting and rejoining.**
+210 tests pass headlessly. The Unity client exists as source but has never been compiled — see
 `unity/README.md`.
 
 ---
@@ -132,10 +133,41 @@ to match at every checkpoint and in its final economy. Falsifying a checkpoint i
 a single command is detected; a truncated replay still parses what it recorded; and random bytes are
 rejected rather than throwing.
 
+#### Reconnection (M6, brought forward)
+- A dropped player keeps their slot for a grace window (default three minutes) while **their
+  settlement keeps running** — buildings produce, standing orders continue, and an opponent can
+  attack them. A disconnect costs you the time you were away, never a free pause for everyone else.
+- Reconnection needs no world snapshot. Because a client's replica only ever held what it was
+  allowed to see, restoring it is a matter of the server *forgetting* what it believed the client
+  knew: the next replication pass then re-sends that player's whole visible world and their economy,
+  exactly as on a fresh join.
+- Slots are reclaimed with a **reconnect token** issued at first join, so a stranger cannot take a
+  disconnected player's seat, and a fresh joiner is refused while all slots are still claimed.
+- When the grace window expires the player is resigned. Handing the settlement to an AI instead is a
+  lobby setting once there is an AI to hand it to (M14).
+
+#### Architecture guards
+The coding standards in `TECHNICAL_ARCHITECTURE.md` are now enforced by tests rather than by
+convention, reporting the offending file and line:
+- **BH0001** — no `float`, `double`, floating-point `Math` members, `Mathf`, `System.Random`,
+  wall-clock time or `Guid.NewGuid` anywhere in the simulation. Integer `Math.Min`/`Max`/`Abs` remain
+  allowed because they are deterministic.
+- **BH0002** — no `UnityEngine` reference outside the Unity client, which is what keeps the headless
+  server and the sub-second test suite possible.
+- **BH0003** — the simulation never iterates a hash-based collection, so allocation history cannot
+  leak into game outcomes.
+- Assembly dependency direction: `Brinehold.Sim` references only `Brinehold.Core`; `Brinehold.Core`
+  references nothing of ours.
+- Every `ISimSystem` appears exactly once in the declared tick schedule — no dead systems, no
+  double-applied ones.
+
+Each guard was verified by planting a violation and confirming it fails with the file and line, then
+reverting.
+
 #### Testing and tooling
-- 199 tests: 50 core, 62 simulation, 38 client, 49 networked integration (10 over real UDP sockets,
-  including one at 20% packet loss and one played through to victory; 10 replay round-trip tests;
-  and the golden corpus).
+- 210 tests: 50 core, 68 simulation, 38 client, 54 networked integration (10 over real UDP sockets
+  including one at 20% packet loss and one played to victory; 5 reconnection tests over real
+  sockets; 10 replay round-trip tests; and the golden corpus).
 - Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
   client that forges player ids, orders enemy units, tampers with local state, floods commands,
   replays sequence numbers and sends malformed packets — all with no effect on the world.

@@ -37,13 +37,15 @@ namespace Brinehold.Protocol
             w.WriteUInt16(m.ProtocolVersion);
             w.WriteUInt64(m.ContentHash);
             w.WriteString(m.PlayerName ?? string.Empty);
+            w.WriteUInt64(m.ReconnectToken);
         }
 
         public static HelloMessage ReadHello(BitReader r) => new HelloMessage
         {
             ProtocolVersion = r.ReadUInt16(),
             ContentHash = r.ReadUInt64(),
-            PlayerName = r.ReadString()
+            PlayerName = r.ReadString(),
+            ReconnectToken = r.ReadUInt64()
         };
 
         /// <summary>
@@ -120,6 +122,9 @@ namespace Brinehold.Protocol
             w.WriteUInt16(m.MapHeight);
             w.WriteUInt64(m.Seed);
             w.WriteUInt64(m.ContentHash);
+            w.WriteUInt64(m.ReconnectToken);
+            w.WriteBool(m.Reconnected);
+            w.WriteUInt32(m.Tick);
         }
 
         public static WelcomeMessage ReadWelcome(BitReader r) => new WelcomeMessage
@@ -130,7 +135,10 @@ namespace Brinehold.Protocol
             MapWidth = r.ReadUInt16(),
             MapHeight = r.ReadUInt16(),
             Seed = r.ReadUInt64(),
-            ContentHash = r.ReadUInt64()
+            ContentHash = r.ReadUInt64(),
+            ReconnectToken = r.ReadUInt64(),
+            Reconnected = r.ReadBool(),
+            Tick = r.ReadUInt32()
         };
 
         public static void Write(BitWriter w, in TickHeaderMessage m)

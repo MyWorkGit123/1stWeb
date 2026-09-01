@@ -91,6 +91,24 @@ namespace Brinehold.Net.Replication
         }
 
         /// <summary>
+        /// Forgets everything a player was believed to know, so the next packet re-sends their whole
+        /// visible world and their private state.
+        ///
+        /// This is the entire client-side half of reconnection. Because a client's replica only ever
+        /// contained what it was allowed to see, restoring it is not a matter of shipping a world
+        /// snapshot — it is a matter of the server dropping its assumption about what the client
+        /// remembers. A rejoining player gets their settlement, the enemies currently in their
+        /// vision, and nothing else, exactly as on a fresh join.
+        /// </summary>
+        public void ResetPlayerView(int player)
+        {
+            if (player < 0 || player >= _views.Length) return;
+            PlayerView view = _views[player];
+            view.Known.Clear();
+            view.HasPrivate = false;
+        }
+
+        /// <summary>
         /// Advances the shadow replica and measures drift. Call once per tick, after the simulation
         /// has stepped and before building packets.
         /// </summary>
