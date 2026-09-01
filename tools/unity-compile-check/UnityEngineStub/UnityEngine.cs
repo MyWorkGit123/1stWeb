@@ -38,6 +38,9 @@ namespace UnityEngine
         public static Vector3 up => new Vector3(0, 1, 0);
         public static Vector3 forward => new Vector3(0, 0, 1);
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a;
+        public float magnitude => (float)System.Math.Sqrt(x * x + y * y + z * z);
+        public float sqrMagnitude => x * x + y * y + z * z;
+        public static float Distance(Vector3 a, Vector3 b) => (a - b).magnitude;
         public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
         public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator *(Vector3 a, float s) => new Vector3(a.x * s, a.y * s, a.z * s);
@@ -108,6 +111,8 @@ namespace UnityEngine
         public static void DestroyImmediate(Object target) { }
         public static T Instantiate<T>(T original) where T : Object => original;
         public static T Instantiate<T>(T original, Transform parent) where T : Object => original;
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : Object => System.Array.Empty<T>();
+        public static T FindFirstObjectByType<T>() where T : Object => null!;
         public static bool operator ==(Object a, Object b) => ReferenceEquals(a, b);
         public static bool operator !=(Object a, Object b) => !ReferenceEquals(a, b);
         public override bool Equals(object other) => ReferenceEquals(this, other);
@@ -154,6 +159,24 @@ namespace UnityEngine
     }
 
     public enum PrimitiveType { Sphere, Capsule, Cylinder, Cube, Plane, Quad }
+
+    public enum FindObjectsSortMode { None, InstanceID }
+
+    // Yield instructions used by play-mode coroutine tests.
+    public class YieldInstruction { }
+    public class CustomYieldInstruction : System.Collections.IEnumerator
+    {
+        public virtual bool keepWaiting => false;
+        public object Current => null!;
+        public bool MoveNext() => keepWaiting;
+        public void Reset() { }
+    }
+    public sealed class WaitForSeconds : YieldInstruction
+    {
+        public WaitForSeconds(float seconds) { }
+    }
+    public sealed class WaitForEndOfFrame : YieldInstruction { }
+    public sealed class WaitForFixedUpdate : YieldInstruction { }
 
     public class Camera : Behaviour
     {
@@ -206,6 +229,7 @@ namespace UnityEngine
     public class Mesh : Object
     {
         public Rendering.IndexFormat indexFormat { get; set; }
+        public int[] triangles { get; set; } = System.Array.Empty<int>();
         public void SetVertices(System.Collections.Generic.List<Vector3> vertices) { }
         public void SetTriangles(System.Collections.Generic.List<int> triangles, int submesh) { }
         public void SetUVs(int channel, System.Collections.Generic.List<Vector2> uvs) { }

@@ -38,7 +38,7 @@ namespace Brinehold.Unity.Boot
 
         private void Update()
         {
-            if (Game == null || CameraRig == null) return;
+            if (Game == null || CameraRig == null || Game.Replica == null) return;
 
             HandlePlacement();
             HandleLeftMouse();

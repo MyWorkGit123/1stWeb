@@ -59,7 +59,16 @@ namespace Brinehold.Unity.Boot
         /// <summary>0..1 through the current simulation tick, for view interpolation.</summary>
         public float TickAlpha { get; private set; }
 
-        private void Awake()
+        /// <summary>
+        /// Initialisation happens in Start, not Awake, and that is load-bearing.
+        ///
+        /// PrototypeSceneSetup builds this component with AddComponent and then assigns its scene
+        /// references on the following lines — but AddComponent runs Awake synchronously, so those
+        /// references are still null at that point. Unity guarantees every Awake completes before
+        /// any Start, so deferring by one phase is what lets the wiring finish first. Doing this
+        /// work in Awake silently produced a running match with no terrain and no fog.
+        /// </summary>
+        private void Start()
         {
             MatchConfig config = MatchConfig.TwoPlayer(Seed);
 
@@ -98,6 +107,8 @@ namespace Brinehold.Unity.Boot
 
         private void Update()
         {
+            if (Host == null) return;   // Start has not run yet
+
             // Fixed simulation rate, decoupled from frame rate. A slow frame runs several ticks; a
             // fast one runs none and simply interpolates further through the current tick.
             _tickAccumulator += Time.deltaTime;

@@ -73,6 +73,7 @@ dotnet test Brinehold.sln                 # 231 tests: maths, game rules, networ
 tools/ci/verify-replays.sh                # re-simulate the golden replay corpus and check the hashes
 tools/ci/validate-content.sh              # validate the authored balance files
 tools/ci/check-unity-scripts.sh            # compile the Unity scripts against a UnityEngine stub
+tools/dev/unity-check.ps1                 # on a machine with Unity: batch-mode compile + play-mode tests
 tools/dev/run-networked-match.sh          # server + two clients, three processes, real UDP sockets
 tools/dev/benchmark.sh                    # a ten-minute match measured for tick cost and bandwidth
 tools/dev/run-local-match.sh              # a real-time headless match

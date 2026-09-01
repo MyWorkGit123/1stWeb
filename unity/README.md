@@ -40,11 +40,46 @@ it, none of which a compiler alone would have reported:
 Expect the first editor session to still turn up something. When it does, the errors are worth
 reporting back — most will be one-line fixes.
 
-## Running the prototype
+## Verifying it headlessly (the fast loop)
+
+Unity can run without opening its window, which makes checking a change one command that produces a
+pass or a fail rather than an impression of what somebody saw on screen:
+
+```powershell
+tools\dev\unity-check.ps1              # Windows
+```
+```bash
+tools/dev/unity-check.sh                # macOS and Linux
+```
+
+It builds the .NET side first (a failure there is far easier to read from `dotnet` than from Unity's
+console), then runs the play-mode tests in batch mode and prints compile errors and per-test results.
+
+It writes two files. **If anything fails, those two are what to send back:**
+
+| File | Contains |
+|---|---|
+| `unity.log` | The full editor log, including every compile error |
+| `unity-tests.xml` | Per-test results with failure messages |
+
+The play-mode tests in `Assets/Brinehold/Tests/PlayMode` cover only what the real runtime can answer
+— does the scene construct, do views appear and *actually become visible*, is there geometry, does
+the simulation advance, do ordered units move on screen, does the HUD match the server. Everything
+about the simulation, networking and client logic is already covered by the 231 headless tests that
+need no editor at all.
+
+Two of those play-mode tests are regression guards for bugs found before the editor ever ran: views
+being cloned inactive (every unit invisible), and scene references still being null when the match
+was built (no terrain, no fog).
+
+## Running the prototype interactively
 
 1. Create a new empty scene (`File → New Scene → Basic (Built-in)` or an empty URP scene).
 2. Create an empty GameObject and add the **`PrototypeSceneSetup`** component.
 3. Press **Play**.
+
+If the scene looks empty, check the console first — and run `unity-check` above, which turns most
+"nothing happened" symptoms into a named failing test.
 
 `PrototypeSceneSetup` builds the whole scene from primitives at runtime — camera, lighting, terrain
 mesh, unit prefabs, fog, HUD, minimap and input. There are no prefab assets or `.unity` scene files

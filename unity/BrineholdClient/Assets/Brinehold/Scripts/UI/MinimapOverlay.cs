@@ -37,7 +37,7 @@ namespace Brinehold.Unity.Boot
 
         private void Update()
         {
-            if (Game == null) return;
+            if (Game == null || Game.ClientNav == null) return;
             if (Time.time < _nextRefresh) return;
             _nextRefresh = Time.time + RefreshInterval;
             Rebuild();

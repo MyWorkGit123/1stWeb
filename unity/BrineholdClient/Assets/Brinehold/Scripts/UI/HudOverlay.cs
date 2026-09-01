@@ -28,7 +28,7 @@ namespace Brinehold.Unity.Boot
 
         private void Update()
         {
-            if (Game == null) return;
+            if (Game == null || Game.Replica == null) return;
 
             if (UnityEngine.Input.GetKeyDown(KeyCode.F3)) ShowNetGraph = !ShowNetGraph;
 
@@ -44,7 +44,7 @@ namespace Brinehold.Unity.Boot
 
         private void OnGUI()
         {
-            if (Game == null) return;
+            if (Game == null || Game.Replica == null) return;
             EnsureStyles();
 
             DrawResourceBar();

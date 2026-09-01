@@ -27,6 +27,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../unity/BrineholdClient/Assets/Brinehold/Scripts/**/*.cs" />
+    <Compile Include="../../unity/BrineholdClient/Assets/Brinehold/Tests/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="UnityEngineStub/UnityEngineStub.csproj" />

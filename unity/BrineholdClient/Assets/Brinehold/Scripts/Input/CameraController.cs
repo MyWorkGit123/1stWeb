@@ -23,7 +23,7 @@ namespace Brinehold.Unity.Boot
 
         private void LateUpdate()
         {
-            if (Game == null || Target == null) return;
+            if (Game == null || Target == null || Game.Rig == null) return;
 
             float delta = Time.deltaTime;
             ReadPan(delta);
