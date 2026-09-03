@@ -1,0 +1,7 @@
+{
+  "name": "com.brinehold.core",
+  "version": "0.1.0",
+  "displayName": "Brinehold Core",
+  "description": "Deterministic fixed-point maths, collections and bit serialisation. No UnityEngine dependency.",
+  "unity": "6000.0"
+}

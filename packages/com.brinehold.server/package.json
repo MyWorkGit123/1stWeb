@@ -1,0 +1,13 @@
+{
+  "name": "com.brinehold.server",
+  "version": "0.1.0",
+  "displayName": "Brinehold Match Host",
+  "description": "The authoritative match host. A package rather than an executable so the client can run it in-process for listen mode, with no second code path.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.brinehold.core": "0.1.0",
+    "com.brinehold.sim": "0.1.0",
+    "com.brinehold.protocol": "0.1.0",
+    "com.brinehold.net": "0.1.0"
+  }
+}

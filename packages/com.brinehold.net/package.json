@@ -1,0 +1,8 @@
+{
+  "name": "com.brinehold.net",
+  "version": "0.1.0",
+  "displayName": "Brinehold Networking",
+  "description": "Transport abstraction, fog-filtered replication and the client-side replica.",
+  "unity": "6000.0",
+  "dependencies": { "com.brinehold.core": "0.1.0", "com.brinehold.sim": "0.1.0", "com.brinehold.protocol": "0.1.0" }
+}

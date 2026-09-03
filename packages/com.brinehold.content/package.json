@@ -1,0 +1,8 @@
+{
+  "name": "com.brinehold.content",
+  "version": "0.1.0",
+  "displayName": "Brinehold Content",
+  "description": "Authored game data and the loader that turns it into a ContentDatabase.",
+  "unity": "6000.0",
+  "dependencies": { "com.brinehold.core": "0.1.0", "com.brinehold.sim": "0.1.0" }
+}

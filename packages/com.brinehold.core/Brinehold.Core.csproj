@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Brinehold.Core</RootNamespace>
+    <AssemblyName>Brinehold.Core</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="**/*.cs" />
+    <Compile Include="Runtime/**/*.cs" />
+  </ItemGroup>
+</Project>

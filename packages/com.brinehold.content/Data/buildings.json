@@ -1,0 +1,53 @@
+{
+  // The settlement core: stores goods, trains the population, and is the victory target.
+  "warehouse": {
+    "maxHealth": 800,
+    "visionRange": 20,
+    "footprintHalf": 2,
+    "buildTicks": 600,
+    "cost": { "wood": 150, "stone": 50 },
+    "isDropOff": true,
+    "populationCapacity": 5,
+    "trains": ["worker", "soldier"]
+  },
+
+  "house": {
+    "maxHealth": 400,
+    "visionRange": 10,
+    "footprintHalf": 1,
+    "buildTicks": 300,
+    "cost": { "wood": 50 },
+    "populationCapacity": 5
+  },
+
+  // A forward drop-off. Placing one near a distant forest is the first real logistics decision a
+  // player makes: it costs 60 wood and saves every trip thereafter.
+  "lumberCamp": {
+    "maxHealth": 400,
+    "visionRange": 10,
+    "footprintHalf": 1,
+    "buildTicks": 300,
+    "cost": { "wood": 60 },
+    "isDropOff": true
+  },
+
+  "fishingWharf": {
+    "maxHealth": 400,
+    "visionRange": 10,
+    "footprintHalf": 1,
+    "buildTicks": 400,
+    "cost": { "wood": 70 },
+    "requiresWaterAdjacency": true,
+    "isDropOff": true
+  },
+
+  "dock": {
+    "maxHealth": 600,
+    "visionRange": 15,
+    "footprintHalf": 2,
+    "buildTicks": 500,
+    "cost": { "wood": 100, "stone": 50 },
+    "requiresWaterAdjacency": true,
+    "trains": ["ship"]
+  }
+}

@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Unity
+unity/BrineholdClient/Library/
+unity/BrineholdClient/Temp/
+unity/BrineholdClient/Logs/
+unity/BrineholdClient/UserSettings/
+unity/BrineholdClient/Build/
+unity/BrineholdClient/Builds/
+*.csproj.user
+
+# Tools
+.vs/
+.idea/
+.vscode/
+
+# Runtime output
+*.brhr.tmp
+/artifacts/

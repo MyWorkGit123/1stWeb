@@ -1,0 +1,7 @@
+{
+  // Capacity is how much a single node holds before it is exhausted. Ten workers on one forest
+  // stand will strip it in a few minutes, which is the point: expansion is not optional.
+  "forest":       { "capacity": 300, "yields": "wood"  },
+  "fishShoal":    { "capacity": 400, "yields": "food"  },
+  "stoneOutcrop": { "capacity": 250, "yields": "stone" }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Brinehold.Unity.PlayModeTests",
+  "rootNamespace": "Brinehold.Unity.Tests",
+  "references": [
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Brinehold.Unity",
+    "Brinehold.Core",
+    "Brinehold.Sim",
+    "Brinehold.Protocol",
+    "Brinehold.Net",
+    "Brinehold.Server.Core",
+    "Brinehold.Client"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "noEngineReferences": false
+}

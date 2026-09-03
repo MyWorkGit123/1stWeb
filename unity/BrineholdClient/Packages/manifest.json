@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "com.brinehold.core": "file:../../../packages/com.brinehold.core",
+    "com.brinehold.sim": "file:../../../packages/com.brinehold.sim",
+    "com.brinehold.content": "file:../../../packages/com.brinehold.content",
+    "com.brinehold.protocol": "file:../../../packages/com.brinehold.protocol",
+    "com.brinehold.net": "file:../../../packages/com.brinehold.net",
+    "com.brinehold.server": "file:../../../packages/com.brinehold.server",
+    "com.brinehold.client": "file:../../../packages/com.brinehold.client",
+    "com.unity.test-framework": "1.4.5"
+  }
+}
