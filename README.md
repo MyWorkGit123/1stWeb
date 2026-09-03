@@ -8,7 +8,7 @@ competitive RTS structure — 2 to 8 players, real time, server-authoritative.
 
 **Engine:** Unity 6 LTS · C#
 **Status:** 🟢 The prototype **plays a real match across separate processes over UDP** and **records
-replays that reproduce it exactly**, and survives a client dropping and rejoining — **210 tests**
+replays that reproduce it exactly**, and survives a client dropping and rejoining — **232 tests**
 passing headlessly (`dotnet test`, no Unity needed). Content is data-driven and hash-gated.
 🟡 The **Unity client compiles against a UnityEngine stub in CI but has never been opened in the editor**. See [`unity/README.md`](unity/README.md).
 
@@ -69,7 +69,7 @@ tests/      golden replays, test maps, fixtures
 ## Try it
 
 ```bash
-dotnet test Brinehold.sln                 # 231 tests: maths, game rules, networking, client, anti-cheat
+dotnet test Brinehold.sln                 # 232 tests: maths, game rules, networking, client, anti-cheat
 tools/ci/verify-replays.sh                # re-simulate the golden replay corpus and check the hashes
 tools/ci/validate-content.sh              # validate the authored balance files
 tools/ci/check-unity-scripts.sh            # compile the Unity scripts against a UnityEngine stub

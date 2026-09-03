@@ -6,7 +6,7 @@ versioning will follow [Semantic Versioning](https://semver.org/) once there is 
 
 **Project status: the prototype plays a real match across separate processes over UDP, and records
 replays that reproduce it exactly, survives a client disconnecting and rejoining, and runs on data-driven content.**
-231 tests pass headlessly. The Unity client exists as source but has never been compiled — see
+232 tests pass headlessly. The Unity client exists as source but has never been compiled — see
 `unity/README.md`.
 
 ---
@@ -15,7 +15,7 @@ replays that reproduce it exactly, survives a client disconnecting and rejoining
 
 ### Added — M1 foundations and the M3 prototype simulation and network spine
 
-**Status: 185 tests passing** via `dotnet test` — no Unity editor required, because the simulation
+**Status: 232 tests passing** via `dotnet test` — no Unity editor required, because the simulation
 has no engine dependency.
 
 #### `Brinehold.Core` — deterministic primitives (pure C#, no `UnityEngine`)
@@ -187,7 +187,7 @@ reverting.
   cannot quietly pass as evidence about the current build.
 
 #### Testing and tooling
-- 231 tests: 50 core, 68 simulation, 38 client, 54 networked integration, 21 content. Covers real
+- 232 tests: 50 core, 69 simulation, 38 client, 54 networked integration, 21 content. Covers real
   UDP sockets (including 20% packet loss and a match played to victory), reconnection over real
   sockets, replay round-trips, the golden corpus, and the content pipeline.
 - Integration tests decode the actual bytes on the wire to prove fog enforcement, and drive a cheat
@@ -206,6 +206,30 @@ reverting.
 - A separate content package with a JSON loader; prototype statistics still live in `Brinehold.Sim`.
 - The allocation test and the `Fix64`-versus-`float` benchmark.
 - Reconnection, replays and spectating (M4/M6).
+
+### Fixed — `tools/dev/unity-check.ps1` never actually waited for Unity
+
+The script that runs the Unity client headlessly reported *"no log was produced, so Unity may not
+have started"* on a machine that had Unity installed and working. Two separate causes:
+
+- **PowerShell's call operator does not wait for a GUI-subsystem executable, and `Unity.exe` is
+  one.** `& $UnityPath ...` returned the instant Unity launched, so the script looked for
+  `unity.log` before Unity had created it, found nothing, and concluded the editor had never run.
+  Replaced with `Start-Process -Wait -PassThru`, which also yields a real exit code.
+- **`unity/BrineholdClient/ProjectSettings/` carries no `ProjectVersion.txt`,** deliberately —
+  pinning an editor version would make every contributor's install look like a mismatch. The script
+  now writes one from the version parsed out of the editor path, so Unity opens the project without
+  a prompt.
+
+Also in the same script: arguments are quoted individually (Windows PowerShell 5.1 joins an
+argument array with spaces and quotes nothing itself, so a path containing a space split in two);
+the exit code and elapsed time are reported; a missing log prints an ordered checklist (editor
+still open, unlicensed, try `-CompileOnly`); and a missing results file prints the last 25 log
+lines instead of nothing.
+
+The file is pure ASCII with a BOM and CRLF endings, enforced by `ArchitectureGuardTests` and a
+`pwsh` parse step in CI — a UTF-8 em dash in a BOM-less `.ps1` had previously broken parsing on
+Windows PowerShell 5.1, which reads such files as Windows-1252.
 
 ### Added — M0 architecture and design phase
 
